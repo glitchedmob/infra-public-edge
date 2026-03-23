@@ -1,0 +1,2 @@
+---
+ansible_ssh_private_key: "{{ lookup('amazon.aws.aws_ssm', ssm_private_key_path) if ssm_private_key_path is defined else omit }}"

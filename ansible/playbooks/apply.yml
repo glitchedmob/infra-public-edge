@@ -1,0 +1,64 @@
+---
+- name: Deploy Services
+  hosts: x86-vps-node-01
+  become: true
+  tasks:
+    - name: Fetch Flux SSM values
+      ansible.builtin.set_fact:
+        flux_access_key_id: "{{ lookup('amazon.aws.aws_ssm', ssm_flux_access_key_id_path) if ssm_flux_access_key_id_path is defined else omit }}"
+        flux_secret_access_key: "{{ lookup('amazon.aws.aws_ssm', ssm_flux_secret_access_key_path) if ssm_flux_secret_access_key_path is defined else omit }}"
+        flux_git_private_key: "{{ lookup('amazon.aws.aws_ssm', ssm_flux_git_private_key_path) if ssm_flux_git_private_key_path is defined else omit }}"
+        flux_github_status_token: "{{ lookup('amazon.aws.aws_ssm', ssm_github_status_token_path) if ssm_github_status_token_path is defined else omit }}"
+
+    - name: Fetch GitHub SSH known_hosts
+      ansible.builtin.command:
+        cmd: ssh-keyscan -t ed25519 github.com
+      register: github_known_hosts
+      changed_when: false
+      delegate_to: localhost
+      become: false
+
+    - name: Render Flux install manifest in memory
+      ansible.builtin.set_fact:
+        flux_install_manifest: "{{ lookup('url', 'https://github.com/fluxcd/flux2/releases/download/v2.8.1/install.yaml', split_lines=False) }}"
+
+    - name: Render manifest files in memory
+      ansible.builtin.set_fact:
+        namespaces_manifest: "{{ lookup('file', playbook_dir ~ '/manifests/namespaces.yaml') }}"
+        flux_sync_manifests: "{{ lookup('file', playbook_dir ~ '/manifests/flux-sync.yaml') }}"
+        flux_git_auth_manifest: "{{ lookup('template', playbook_dir ~ '/manifests/flux-git-auth-secret.yaml.j2') }}"
+        github_status_token_manifest: "{{ lookup('template', playbook_dir ~ '/manifests/github-status-token-secret.yaml.j2') }}"
+        github_notifications_manifest: "{{ lookup('file', playbook_dir ~ '/manifests/github-notifications.yaml') }}"
+        external_secrets_creds_manifest: "{{ lookup('template', playbook_dir ~ '/manifests/external-secrets-aws-creds.yaml.j2') }}"
+        headscale_runtime_manifest: "{{ lookup('template', playbook_dir ~ '/manifests/headscale-runtime-secret.yaml.j2') }}"
+        headplane_runtime_manifest: "{{ lookup('template', playbook_dir ~ '/manifests/headplane-runtime-secret.yaml.j2') }}"
+
+    - name: Apply Kubernetes manifests
+      ansible.builtin.command: kubectl apply -f -
+      args:
+        stdin: "{{ item.manifest }}"
+      environment:
+        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+      register: kubectl_apply_result
+      changed_when: "'created' in (kubectl_apply_result.stdout | default('')) or 'configured' in (kubectl_apply_result.stdout | default(''))"
+      loop:
+        - name: namespaces
+          manifest: "{{ namespaces_manifest }}"
+        - name: flux install
+          manifest: "{{ flux_install_manifest }}"
+        - name: flux git auth secret
+          manifest: "{{ flux_git_auth_manifest }}"
+        - name: github status token
+          manifest: "{{ github_status_token_manifest }}"
+        - name: github notifications
+          manifest: "{{ github_notifications_manifest }}"
+        - name: external-secrets aws creds
+          manifest: "{{ external_secrets_creds_manifest }}"
+        - name: headscale runtime secret
+          manifest: "{{ headscale_runtime_manifest }}"
+        - name: headplane runtime secret
+          manifest: "{{ headplane_runtime_manifest }}"
+        - name: flux sync
+          manifest: "{{ flux_sync_manifests }}"
+      loop_control:
+        label: "{{ item.name }}"

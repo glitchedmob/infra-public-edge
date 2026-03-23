@@ -1,0 +1,12 @@
+[project]
+name = "physical-infra-ansible"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [
+    "ansible>=13.0.0",
+    "ansible-lint>=26.0.0",
+    "boto3>=1.38.0",
+]
+
+[tool.uv]
+required-version = ">=0.10.0,<0.11.0"

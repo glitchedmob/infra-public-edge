@@ -1,0 +1,11 @@
+---
+- name: Setup Public VPS
+  hosts: x86-vps-node-01
+  become: true
+  vars:
+    k3s_version: v1.35.1+k3s1
+    server_group: all
+    api_endpoint: localhost
+  roles:
+    - k3s.orchestration.prereq
+    - k3s.orchestration.k3s_server
