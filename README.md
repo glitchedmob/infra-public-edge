@@ -2,11 +2,11 @@
 
 Public VPS infrastructure for glitchedmob. Manages a Vultr VPS running k3s with Headscale, deployed via Ansible and managed with Flux GitOps.
 
-## Components
+## Scope
 
-- **src/tf/** - OpenTofu project: Vultr VPS provisioning, Cloudflare DNS records, AWS SSM parameters
-- **src/ansible/** - Ansible project: k3s bootstrap, Flux GitOps deployment
-- **src/k8s/** - Kubernetes manifests managed by Flux: Headscale, Headplane, cert-manager, external-secrets, reloader
+- **OpenTofu (`src/tf/`)**: provisions Vultr VPS resources, Cloudflare DNS, and AWS SSM parameters.
+- **Ansible (`src/ansible/`)**: runs host automation and cluster bootstrap operations.
+- **Kubernetes (`src/k8s/`)**: holds Flux-managed manifests for edge platform services.
 
 ## Prerequisites
 
@@ -21,22 +21,28 @@ Public VPS infrastructure for glitchedmob. Manages a Vultr VPS running k3s with 
 ### Terraform
 
 ```bash
-make tf-init     # Initialize
-make tf-plan     # Preview changes
-make tf-apply    # Apply changes
-make tf-validate # Validate syntax
-make tf-format   # Check formatting
+make tf-init
+make tf-plan
+make tf-show ARGS=tfplan
+make tf-output
+make tf-apply
+make tf-validate
+make tf-format
+make tf-lint-fix
 ```
 
 ### Ansible
 
 ```bash
-make ansible-install   # Install Python deps + Ansible collections
-make ansible-bootstrap # Install k3s on the VPS
-make ansible-apply     # Deploy Flux and initial manifests
-make ansible-lint      # Lint playbooks
+make ansible-install
+make ansible PLAYBOOK=site.yml
+make ansible-shell HOST=x86-node-01 COMMAND='uname -a'
+make ansible-inventory ARGS='--list'
+make ansible-lint
+make ansible-lint-fix
 ```
 
-### Kubernetes
+## Operational Notes
 
-src/k8s/ manifests are managed by Flux. After initial bootstrap via Ansible, Flux watches this repo and applies changes automatically.
+- `src/k8s/` manifests are reconciled by Flux after bootstrap.
+- CI validates changes; infrastructure apply workflows remain operator-driven.
