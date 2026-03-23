@@ -2,5 +2,5 @@
 plugin: cloud.terraform.terraform_provider
 binary_path: "tofu"
 state_file: ""
-project_path: ../../tf
+project_path: ../tf
 search_child_modules: true
