@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: eso-k8s-store
+  namespace: headscale
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: eso-k8s-store
+  namespace: headscale
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - authorization.k8s.io
+    resources:
+      - selfsubjectrulesreviews
+    verbs:
+      - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: eso-k8s-store
+  namespace: headscale
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: eso-k8s-store
+subjects:
+  - kind: ServiceAccount
+    name: eso-k8s-store
+    namespace: headscale
+---
+apiVersion: external-secrets.io/v1
+kind: SecretStore
+metadata:
+  name: k8s-headscale
+  namespace: headscale
+spec:
+  provider:
+    kubernetes:
+      remoteNamespace: headscale
+      server:
+        caProvider:
+          type: ConfigMap
+          name: kube-root-ca.crt
+          key: ca.crt
+      auth:
+        serviceAccount:
+          name: eso-k8s-store

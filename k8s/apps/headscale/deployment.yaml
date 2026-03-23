@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: headscale
+  namespace: headscale
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: headscale
+  template:
+    metadata:
+      labels:
+        app: headscale
+    spec:
+      containers:
+        - name: headscale
+          image: headscale/headscale:v0.28.0
+          command:
+            - headscale
+            - serve
+          volumeMounts:
+            - name: config
+              mountPath: /etc/headscale
+              readOnly: true
+            - name: data
+              mountPath: /var/lib/headscale
+          ports:
+            - containerPort: 8080
+              name: http
+            - containerPort: 9090
+              name: metrics
+            - containerPort: 3478
+              protocol: UDP
+              name: stun
+          livenessProbe:
+            exec:
+              command:
+                - headscale
+                - health
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - headscale
+                - health
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+      volumes:
+        - name: config
+          secret:
+            secretName: headscale-config
+        - name: data
+          persistentVolumeClaim:
+            claimName: headscale-data

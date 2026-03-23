@@ -1,0 +1,45 @@
+server_url: "{{ .HEADSCALE_SERVER_URL }}"
+listen_addr: "0.0.0.0:8080"
+metrics_listen_addr: "127.0.0.1:9090"
+stun_listen_addr: "0.0.0.0:3478"
+private_key_path: /var/lib/headscale/private.key
+ephemeral_node_inactivity_timeout: 30m
+node_update_check_interval: 10s
+acme_url: https://acme-v02.api.letsencrypt.org/directory
+tls_cert_path: ""
+tls_key_path: ""
+noise:
+  private_key_path: /var/lib/headscale/noise_private.key
+database:
+  type: sqlite3
+  sqlite:
+    path: /var/lib/headscale/db.sqlite
+policy:
+  mode: database
+prefixes:
+  v4: 100.64.0.0/10
+  v6: fd7a:115c:a1e0::/48
+  allocation: sequential
+derp:
+  server:
+    enabled: true
+    stun_listen_addr: "0.0.0.0:3478"
+    private_key_path: /var/lib/headscale/derp_server_private.key
+    ipv4: "{{ .HEADSCALE_DERP_IPV4 }}"
+    ipv6: "{{ .HEADSCALE_DERP_IPV6 }}"
+  urls:
+    - https://controlplane.tailscale.com/derpmap/default
+  auto_update_enabled: true
+  update_frequency: 24h
+dns:
+  nameservers:
+    global:
+      - 1.1.1.1
+      - 8.8.8.8
+  override_local_dns: false
+  magic_dns: true
+  base_domain: headnet.levizitting.com
+log:
+  format: text
+tracing:
+  enabled: false

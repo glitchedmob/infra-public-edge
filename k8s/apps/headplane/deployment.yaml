@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: headplane
+  namespace: headscale
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: headplane
+  template:
+    metadata:
+      labels:
+        app: headplane
+    spec:
+      containers:
+        - name: headplane
+          image: ghcr.io/tale/headplane:0.6.2
+          volumeMounts:
+            - name: config
+              mountPath: /etc/headplane
+              readOnly: true
+            - name: secrets
+              mountPath: /etc/headplane/secrets
+              readOnly: true
+            - name: headscale-config
+              mountPath: /etc/headscale
+              readOnly: true
+            - name: data
+              mountPath: /var/lib/headplane
+          ports:
+            - containerPort: 3000
+              name: http
+          livenessProbe:
+            exec:
+              command:
+                - /bin/hp_healthcheck
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - /bin/hp_healthcheck
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "50m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
+      volumes:
+        - name: config
+          secret:
+            secretName: headplane-config
+        - name: secrets
+          secret:
+            secretName: headplane-secrets
+        - name: headscale-config
+          secret:
+            secretName: headscale-config
+        - name: data
+          persistentVolumeClaim:
+            claimName: headplane-data

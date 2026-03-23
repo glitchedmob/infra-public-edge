@@ -1,0 +1,11 @@
+server:
+  host: "0.0.0.0"
+  port: 3000
+  base_url: "{{ .HEADPLANE_BASE_URL }}"
+  cookie_secret_path: "/etc/headplane/secrets/cookie_secret"
+  cookie_secure: true
+  data_path: "/var/lib/headplane"
+headscale:
+  url: "http://headscale.headscale.svc.cluster.local:8080"
+  config_path: "/etc/headscale/config.yaml"
+  config_strict: false

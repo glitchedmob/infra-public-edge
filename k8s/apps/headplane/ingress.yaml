@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: headplane
+  namespace: headscale
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: headscale.levizitting.com
+      http:
+        paths:
+          - path: /admin
+            pathType: Prefix
+            backend:
+              service:
+                name: headplane
+                port:
+                  name: http
+  tls:
+    - secretName: headplane-tls
+      hosts:
+        - headscale.levizitting.com
