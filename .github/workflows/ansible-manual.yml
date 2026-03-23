@@ -1,0 +1,24 @@
+name: Ansible Run
+
+on:
+  workflow_dispatch:
+    inputs:
+      playbook:
+        description: Playbook to run
+        required: true
+        type: choice
+        options:
+          - bootstrap.yml
+          - apply.yml
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  run:
+    uses: glitchedmob/infra-gha/.github/workflows/ansible-run.yml@v0.3.0
+    with:
+      working-directory: ansible
+      playbook: ${{ inputs.playbook }}
+      envrc_content: ""

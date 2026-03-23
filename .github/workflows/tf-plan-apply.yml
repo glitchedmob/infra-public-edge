@@ -1,0 +1,21 @@
+name: Terraform
+
+on:
+  push:
+    branches: [main]
+    paths: [tf/**]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  plan-apply:
+    uses: glitchedmob/infra-gha/.github/workflows/tf-plan-apply.yml@v0.3.0
+    with:
+      working-directory: tf
+      envrc_content: ""
+    secrets:
+      aws_role_arn: ${{ secrets.AWS_ROLE_ARN }}
+      output_encryption_key: ${{ secrets.OUTPUT_ENCRYPTION_KEY }}

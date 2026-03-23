@@ -1,0 +1,21 @@
+name: Ansible Lint
+
+on:
+  pull_request:
+    paths:
+      - ansible/**
+  push:
+    branches:
+      - main
+    paths:
+      - ansible/**
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  lint:
+    uses: glitchedmob/infra-gha/.github/workflows/ansible-lint.yml@v0.3.0
+    with:
+      working-directory: ansible
