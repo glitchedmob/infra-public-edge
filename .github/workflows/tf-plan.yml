@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - tf/**
+      - .github/workflows/tf-plan.yml
 
 permissions:
   contents: read
