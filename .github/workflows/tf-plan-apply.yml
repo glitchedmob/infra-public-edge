@@ -30,7 +30,7 @@ jobs:
   plan-apply:
     uses: glitchedmob/infra-gha/.github/workflows/tf-plan-apply.yml@v0.6.0
     with:
-      plan-only: ${{ inputs.mode == 'plan' || inputs.mode == '' }}
+      plan-only: ${{ github.event_name == 'workflow_dispatch' && inputs.mode != 'plan-apply' }}
       target-list: ${{ inputs.target-list }}
     secrets:
       envrc_content: |
