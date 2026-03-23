@@ -21,4 +21,5 @@ jobs:
     with:
       working-directory: ansible
       playbook: ${{ inputs.playbook }}
-      envrc_content: ""
+    secrets:
+      output_encryption_key: ${{ secrets.OUTPUT_ENCRYPTION_KEY }}

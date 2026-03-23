@@ -3,7 +3,6 @@
 
 TF_DIR := tf
 ANSIBLE_DIR := ansible
-ENVRC := $(CURDIR)/.envrc
 SHELL := bash
 
 help:
@@ -27,22 +26,22 @@ help:
 # --- OpenTofu ---
 
 tf-init:
-	@source "$(ENVRC)" && cd $(TF_DIR) && tofu init
+	@source .envrc 2>/dev/null || true && cd $(TF_DIR) && tofu init
 
 tf-plan:
-	@source "$(ENVRC)" && cd $(TF_DIR) && tofu plan
+	@source .envrc 2>/dev/null || true && cd $(TF_DIR) && tofu plan
 
 tf-show:
-	@source "$(ENVRC)" && cd $(TF_DIR) && tofu show $(ARGS)
+	@source .envrc 2>/dev/null || true && cd $(TF_DIR) && tofu show $(ARGS)
 
 tf-output:
-	@source "$(ENVRC)" && cd $(TF_DIR) && tofu output $(ARGS)
+	@source .envrc 2>/dev/null || true && cd $(TF_DIR) && tofu output $(ARGS)
 
 tf-apply:
-	@source "$(ENVRC)" && cd $(TF_DIR) && tofu apply
+	@source .envrc 2>/dev/null || true && cd $(TF_DIR) && tofu apply
 
 tf-validate:
-	@source "$(ENVRC)" && cd $(TF_DIR) && tofu validate
+	@source .envrc 2>/dev/null || true && cd $(TF_DIR) && tofu validate
 
 tf-format:
 	@cd $(TF_DIR) && tofu fmt -check -recursive
@@ -54,13 +53,13 @@ tf-lint-fix:
 
 ansible:
 	@[ -n "$(PLAYBOOK)" ] || (echo "Error: PLAYBOOK required" && exit 1)
-	@cd $(ANSIBLE_DIR) && source "$(ENVRC)" && uv run ansible-playbook playbooks/$(PLAYBOOK) $(ARGS)
+	@source .envrc 2>/dev/null || true && cd $(ANSIBLE_DIR) && uv run ansible-playbook playbooks/$(PLAYBOOK) $(ARGS)
 
 ansible-install:
 	@cd $(ANSIBLE_DIR) && uv sync --locked && uv run ansible-galaxy collection install -r requirements.yml
 
 ansible-inventory:
-	@cd $(ANSIBLE_DIR) && source "$(ENVRC)" && uv run ansible-inventory $(ARGS)
+	@source .envrc 2>/dev/null || true && cd $(ANSIBLE_DIR) && uv run ansible-inventory $(ARGS)
 
 ansible-lint:
 	@cd $(ANSIBLE_DIR) && uv run ansible-lint

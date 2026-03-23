@@ -1,20 +1,28 @@
-name: Terraform
+name: Terraform Plan (PR)
 
 on:
-  push:
-    branches: [main]
-    paths: [tf/**]
-  workflow_dispatch:
+  pull_request:
+    paths:
+      - tf/**
 
 permissions:
   contents: read
   id-token: write
+  pull-requests: write
 
 jobs:
-  plan-apply:
+  validate:
+    uses: glitchedmob/infra-gha/.github/workflows/tf-validate.yml@v0.3.0
+    with:
+      working-directory: tf
+      init-backend: false
+
+  plan:
+    needs: validate
     uses: glitchedmob/infra-gha/.github/workflows/tf-plan-apply.yml@v0.3.0
     with:
       working-directory: tf
+      plan-only: true
     secrets:
       envrc_content: |
         export TF_VAR_vultr_api_token="${{ secrets.VULTR_API_TOKEN }}"

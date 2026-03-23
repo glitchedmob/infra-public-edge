@@ -17,4 +17,5 @@ jobs:
     with:
       working-directory: ansible
       trigger-map: '{"apply.yml": ["playbooks/apply.yml", "playbooks/manifests"]}'
-      envrc_content: ""
+    secrets:
+      output_encryption_key: ${{ secrets.OUTPUT_ENCRYPTION_KEY }}
