@@ -18,8 +18,8 @@ jobs:
       - name: Write .envrc
         run: |
           cat > .envrc <<'ENVEOF'
-          export TF_VAR_vultr_api_token="${{ secrets.VULTR_API_TOKEN }}"
-          export TF_VAR_cloudflare_api_token="${{ secrets.CLOUDFLARE_API_TOKEN }}"
+          export TF_VAR_vultr_api_token="${{ secrets.TF_VAR_vultr_api_token }}"
+          export TF_VAR_cloudflare_api_token="${{ secrets.TF_VAR_cloudflare_api_token }}"
           ENVEOF
 
       - uses: aws-actions/configure-aws-credentials@v6

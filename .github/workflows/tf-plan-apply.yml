@@ -3,8 +3,23 @@ name: Terraform
 on:
   push:
     branches: [main]
-    paths: [tf/**]
+    paths:
+      - tf/**
+      - .github/workflows/tf-plan-apply.yml
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "Plan only or plan + apply"
+        required: true
+        type: choice
+        options:
+          - plan
+          - plan-apply
+        default: plan
+      target-list:
+        description: "Optional targets, comma-separated"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -12,12 +27,13 @@ permissions:
 
 jobs:
   plan-apply:
-    uses: glitchedmob/infra-gha/.github/workflows/tf-plan-apply.yml@v0.3.0
+    uses: glitchedmob/infra-gha/.github/workflows/tf-plan-apply.yml@v0.6.0
     with:
-      working-directory: tf
+      plan-only: ${{ inputs.mode == 'plan' || inputs.mode == '' }}
+      target-list: ${{ inputs.target-list }}
     secrets:
       envrc_content: |
-        export TF_VAR_vultr_api_token="${{ secrets.VULTR_API_TOKEN }}"
-        export TF_VAR_cloudflare_api_token="${{ secrets.CLOUDFLARE_API_TOKEN }}"
+        export TF_VAR_vultr_api_token="${{ secrets.TF_VAR_vultr_api_token }}"
+        export TF_VAR_cloudflare_api_token="${{ secrets.TF_VAR_cloudflare_api_token }}"
       aws_role_arn: ${{ secrets.AWS_ROLE_ARN }}
       output_encryption_key: ${{ secrets.OUTPUT_ENCRYPTION_KEY }}
