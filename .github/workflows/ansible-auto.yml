@@ -6,6 +6,7 @@ on:
     paths:
       - src/ansible/playbooks/apply.yml
       - src/ansible/playbooks/manifests/**
+      - .github/workflows/ansible-auto.yml
 
 permissions:
   contents: read
@@ -13,9 +14,9 @@ permissions:
 
 jobs:
   run:
-    uses: glitchedmob/infra-gha/.github/workflows/ansible-auto.yml@v0.6.0
+    uses: glitchedmob/infra-gha/.github/workflows/ansible-auto.yml@v0.6.2
     with:
       working-directory: src/ansible
-      trigger-map: '{"apply.yml": ["playbooks/apply.yml", "playbooks/manifests"]}'
+      trigger-map: '{"apply.yml": ["src/ansible/playbooks/apply.yml", "src/ansible/playbooks/manifests"]}'
     secrets:
       output_encryption_key: ${{ secrets.OUTPUT_ENCRYPTION_KEY }}
