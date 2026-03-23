@@ -17,9 +17,12 @@ permissions:
 
 jobs:
   run:
-    uses: glitchedmob/infra-gha/.github/workflows/ansible-run.yml@v0.6.4
+    uses: glitchedmob/infra-gha/.github/workflows/ansible-run.yml@v0.6.5
     with:
       working-directory: src/ansible
+      initialize-terraform: true
+      terraform-working-directory: src/tf
       playbook: ${{ inputs.playbook }}
     secrets:
+      aws_role_arn: ${{ secrets.AWS_ROLE_ARN }}
       output_encryption_key: ${{ secrets.OUTPUT_ENCRYPTION_KEY }}
