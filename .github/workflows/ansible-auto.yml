@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   run:
-    uses: glitchedmob/infra-gha/.github/workflows/ansible-auto.yml@v0.6.5
+    uses: glitchedmob/infra-gha/.github/workflows/ansible-auto.yml@v0.7.0
     with:
       working-directory: src/ansible
       initialize-terraform: true

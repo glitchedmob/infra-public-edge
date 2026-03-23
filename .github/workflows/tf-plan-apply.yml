@@ -28,7 +28,7 @@ permissions:
 
 jobs:
   plan-apply:
-    uses: glitchedmob/infra-gha/.github/workflows/tf-plan-apply.yml@v0.6.0
+    uses: glitchedmob/infra-gha/.github/workflows/tf-plan-apply.yml@v0.7.0
     with:
       plan-only: ${{ github.event_name == 'workflow_dispatch' && inputs.mode != 'plan-apply' }}
       target-list: ${{ inputs.target-list }}

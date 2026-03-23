@@ -13,13 +13,13 @@ permissions:
 
 jobs:
   validate:
-    uses: glitchedmob/infra-gha/.github/workflows/tf-validate.yml@v0.6.0
+    uses: glitchedmob/infra-gha/.github/workflows/tf-validate.yml@v0.7.0
     with:
       init-backend: false
 
   plan:
     needs: validate
-    uses: glitchedmob/infra-gha/.github/workflows/tf-plan-apply.yml@v0.6.0
+    uses: glitchedmob/infra-gha/.github/workflows/tf-plan-apply.yml@v0.7.0
     with:
       plan-only: true
     secrets:
