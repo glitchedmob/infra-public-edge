@@ -1,8 +1,8 @@
 .PHONY: help tf-init tf-plan tf-show tf-output tf-apply tf-validate tf-format tf-lint-fix \
         ansible ansible-shell ansible-install ansible-inventory ansible-lint ansible-lint-fix
 
-TF_DIR := tf
-ANSIBLE_DIR := ansible
+TF_DIR := src/tf
+ANSIBLE_DIR := src/ansible
 SHELL := bash
 
 help:

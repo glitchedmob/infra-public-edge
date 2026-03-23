@@ -4,8 +4,8 @@ on:
   push:
     branches: [main]
     paths:
-      - ansible/playbooks/apply.yml
-      - ansible/playbooks/manifests/**
+      - src/ansible/playbooks/apply.yml
+      - src/ansible/playbooks/manifests/**
 
 permissions:
   contents: read
@@ -15,7 +15,7 @@ jobs:
   run:
     uses: glitchedmob/infra-gha/.github/workflows/ansible-auto.yml@v0.6.0
     with:
-      working-directory: ansible
+      working-directory: src/ansible
       trigger-map: '{"apply.yml": ["playbooks/apply.yml", "playbooks/manifests"]}'
     secrets:
       output_encryption_key: ${{ secrets.OUTPUT_ENCRYPTION_KEY }}

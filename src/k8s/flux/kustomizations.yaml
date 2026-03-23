@@ -5,7 +5,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 5m
-  path: ./k8s/infrastructure/cert-manager
+  path: ./src/k8s/infrastructure/cert-manager
   prune: true
   wait: true
   sourceRef:
@@ -19,7 +19,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 5m
-  path: ./k8s/infrastructure/cert-manager-issuers
+  path: ./src/k8s/infrastructure/cert-manager-issuers
   prune: true
   wait: true
   dependsOn:
@@ -35,7 +35,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 5m
-  path: ./k8s/infrastructure/external-secrets
+  path: ./src/k8s/infrastructure/external-secrets
   prune: true
   wait: true
   sourceRef:
@@ -49,7 +49,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 5m
-  path: ./k8s/infrastructure/external-secrets-stores
+  path: ./src/k8s/infrastructure/external-secrets-stores
   prune: true
   wait: true
   dependsOn:
@@ -65,7 +65,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 5m
-  path: ./k8s/infrastructure/reloader
+  path: ./src/k8s/infrastructure/reloader
   prune: true
   wait: true
   sourceRef:
@@ -79,7 +79,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 5m
-  path: ./k8s/apps
+  path: ./src/k8s/apps
   prune: true
   wait: true
   dependsOn:

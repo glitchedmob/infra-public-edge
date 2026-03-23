@@ -7,11 +7,11 @@
 .tfstate
 .tfplan
 *.log
-.tf/
+src/tf/.terraform/
 
 # Ansible
-ansible/collections/
-ansible/.ansible/
-ansible/*.log
-ansible/__pycache__/
-ansible/.venv/
+src/ansible/collections/
+src/ansible/.ansible/
+src/ansible/*.log
+src/ansible/__pycache__/
+src/ansible/.venv/

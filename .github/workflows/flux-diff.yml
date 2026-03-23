@@ -2,7 +2,7 @@ name: Flux Diff
 
 on:
   pull_request:
-    paths: [k8s/**]
+    paths: [src/k8s/**]
 
 permissions:
   contents: read
@@ -29,15 +29,15 @@ jobs:
 
       - uses: opentofu/setup-opentofu@v2
         with:
-          tofu_version_file: tf/.tofu-version
+          tofu_version_file: src/tf/.tofu-version
 
       - name: Init Terraform
-        working-directory: tf
+        working-directory: src/tf
         run: tofu init
 
       - name: Read Terraform outputs
         id: tf-outputs
-        working-directory: tf
+        working-directory: src/tf
         run: |
           {
             echo "vps_host=$(tofu output -raw vps_hostname)"
@@ -98,12 +98,12 @@ jobs:
           } >> flux-diff.txt
 
           kustomizations='[
-            {"name": "public-vps-cert-manager", "path": "k8s/infrastructure/cert-manager"},
-            {"name": "public-vps-cert-manager-issuers", "path": "k8s/infrastructure/cert-manager-issuers"},
-            {"name": "public-vps-external-secrets", "path": "k8s/infrastructure/external-secrets"},
-            {"name": "public-vps-external-secrets-stores", "path": "k8s/infrastructure/external-secrets-stores"},
-            {"name": "public-vps-reloader", "path": "k8s/infrastructure/reloader"},
-            {"name": "public-vps-apps", "path": "k8s/apps"}
+            {"name": "public-vps-cert-manager", "path": "src/k8s/infrastructure/cert-manager"},
+            {"name": "public-vps-cert-manager-issuers", "path": "src/k8s/infrastructure/cert-manager-issuers"},
+            {"name": "public-vps-external-secrets", "path": "src/k8s/infrastructure/external-secrets"},
+            {"name": "public-vps-external-secrets-stores", "path": "src/k8s/infrastructure/external-secrets-stores"},
+            {"name": "public-vps-reloader", "path": "src/k8s/infrastructure/reloader"},
+            {"name": "public-vps-apps", "path": "src/k8s/apps"}
           ]'
 
           echo "$kustomizations" | jq -r '.[] | "\(.name)\t\(.path)"' | while IFS=$'\t' read -r name path; do

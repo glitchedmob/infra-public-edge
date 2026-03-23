@@ -19,7 +19,7 @@ jobs:
   run:
     uses: glitchedmob/infra-gha/.github/workflows/ansible-run.yml@v0.6.0
     with:
-      working-directory: ansible
+      working-directory: src/ansible
       playbook: ${{ inputs.playbook }}
     secrets:
       output_encryption_key: ${{ secrets.OUTPUT_ENCRYPTION_KEY }}

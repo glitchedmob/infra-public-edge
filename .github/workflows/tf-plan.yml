@@ -3,7 +3,7 @@ name: Terraform Plan (PR)
 on:
   pull_request:
     paths:
-      - tf/**
+      - src/tf/**
       - .github/workflows/tf-plan.yml
 
 permissions:

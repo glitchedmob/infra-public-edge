@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - tf/**
+      - src/tf/**
       - .github/workflows/tf-plan-apply.yml
   workflow_dispatch:
     inputs:

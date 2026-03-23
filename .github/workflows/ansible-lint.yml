@@ -3,12 +3,12 @@ name: Ansible Lint
 on:
   pull_request:
     paths:
-      - ansible/**
+      - src/ansible/**
   push:
     branches:
       - main
     paths:
-      - ansible/**
+      - src/ansible/**
 
 permissions:
   contents: read
@@ -18,4 +18,4 @@ jobs:
   lint:
     uses: glitchedmob/infra-gha/.github/workflows/ansible-lint.yml@v0.6.0
     with:
-      working-directory: ansible
+      working-directory: src/ansible

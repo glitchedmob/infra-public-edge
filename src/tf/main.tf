@@ -19,14 +19,14 @@ locals {
 }
 
 module "ssh_key" {
-  source               = "git::https://github.com/glitchedmob/infra-shared.git//tf/modules/ssh-key?ref=main"
+  source               = "git::https://github.com/glitchedmob/infra-shared.git//src/tf/modules/ssh-key?ref=main"
   name                 = local.hostname
   key_version          = 2
   ssm_private_key_path = "/homelab/${local.hostname}/ssh-private-key"
 }
 
 module "flux_deploy_key" {
-  source               = "git::https://github.com/glitchedmob/infra-shared.git//tf/modules/ssh-key?ref=main"
+  source               = "git::https://github.com/glitchedmob/infra-shared.git//src/tf/modules/ssh-key?ref=main"
   name                 = "flux-${local.hostname}"
   ssm_private_key_path = "/homelab/${local.hostname}/flux-git-private-key"
   ssm_public_key_path  = "/homelab/${local.hostname}/flux-git-public-key"
