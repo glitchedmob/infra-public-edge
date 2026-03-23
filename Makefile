@@ -1,5 +1,5 @@
 .PHONY: help tf-init tf-plan tf-show tf-output tf-apply tf-validate tf-format tf-lint-fix \
-        ansible ansible-install ansible-inventory ansible-lint ansible-lint-fix
+        ansible ansible-shell ansible-install ansible-inventory ansible-lint ansible-lint-fix
 
 TF_DIR := tf
 ANSIBLE_DIR := ansible
@@ -20,6 +20,7 @@ help:
 	@echo "  Install deps:      make ansible-install"
 	@echo "  Run playbook:      make ansible PLAYBOOK=playbook.yml [ARGS='-v']"
 	@echo "  Inventory:         make ansible-inventory [ARGS='--list']"
+	@echo "  Shell command:     make ansible-shell HOST=host COMMAND='cmd' [ARGS='-v']"
 	@echo "  Lint:              make ansible-lint"
 	@echo "  Lint fix:          make ansible-lint-fix"
 
@@ -57,6 +58,11 @@ ansible:
 
 ansible-install:
 	@cd $(ANSIBLE_DIR) && uv sync --locked && uv run ansible-galaxy collection install -r requirements.yml
+
+ansible-shell:
+	@[ -n "$(HOST)" ] || (echo "Error: HOST required (e.g., x86-node-01)" && exit 1)
+	@[ -n "$(COMMAND)" ] || (echo "Error: COMMAND required (e.g., 'uname -a')" && exit 1)
+	@source .envrc 2>/dev/null || true && cd $(ANSIBLE_DIR) && uv run ansible $(HOST) -m shell -a "$(COMMAND)" $(ARGS)
 
 ansible-inventory:
 	@source .envrc 2>/dev/null || true && cd $(ANSIBLE_DIR) && uv run ansible-inventory $(ARGS)
