@@ -7,6 +7,19 @@ on:
       - tf/**
       - .github/workflows/tf-plan-apply.yml
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "Plan only or plan + apply"
+        required: true
+        type: choice
+        options:
+          - plan
+          - plan-apply
+        default: plan
+      target-list:
+        description: "Optional targets, comma-separated"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -14,9 +27,10 @@ permissions:
 
 jobs:
   plan-apply:
-    uses: glitchedmob/infra-gha/.github/workflows/tf-plan-apply.yml@v0.5.1
+    uses: glitchedmob/infra-gha/.github/workflows/tf-plan-apply.yml@v0.6.0
     with:
-      working-directory: tf
+      plan-only: ${{ inputs.mode == 'plan' || inputs.mode == '' }}
+      target-list: ${{ inputs.target-list }}
     secrets:
       envrc_content: |
         export TF_VAR_vultr_api_token="${{ secrets.TF_VAR_vultr_api_token }}"
