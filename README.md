@@ -40,14 +40,3 @@ make ansible-lint      # Lint playbooks
 ### Kubernetes
 
 k8s/ manifests are managed by Flux. After initial bootstrap via Ansible, Flux watches this repo and applies changes automatically.
-
-## Apply Order
-
-This repo is step 5 in the glitchedmob infrastructure:
-
-1. `infra-aws-core` - S3 backend
-2. `infra-shared` - Shared TF modules
-3. `infra-gha` - Reusable GHA workflows
-4. `infra-on-prem` - MikroTik + Proxmox
-5. **`infra-public-edge`** - This repo
-6. `infra-headscale` - Headscale users (depends on this repo's k3s)
