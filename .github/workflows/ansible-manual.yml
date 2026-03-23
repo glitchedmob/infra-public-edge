@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   run:
-    uses: glitchedmob/infra-gha/.github/workflows/ansible-run.yml@v0.6.0
+    uses: glitchedmob/infra-gha/.github/workflows/ansible-run.yml@v0.6.4
     with:
       working-directory: src/ansible
       playbook: ${{ inputs.playbook }}

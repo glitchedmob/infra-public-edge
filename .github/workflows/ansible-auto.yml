@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   run:
-    uses: glitchedmob/infra-gha/.github/workflows/ansible-auto.yml@v0.6.2
+    uses: glitchedmob/infra-gha/.github/workflows/ansible-auto.yml@v0.6.4
     with:
       working-directory: src/ansible
       trigger-map: '{"apply.yml": ["src/ansible/playbooks/apply.yml", "src/ansible/playbooks/manifests"]}'
