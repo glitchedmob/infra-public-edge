@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   plan-apply:
-    uses: glitchedmob/infra-gha/.github/workflows/tf-plan-apply.yml@v0.3.0
+    uses: glitchedmob/infra-gha/.github/workflows/tf-plan-apply.yml@v0.5.1
     with:
       working-directory: tf
     secrets:
