@@ -1,8 +1,9 @@
-.PHONY: help tf-init tf-plan tf-show tf-output tf-apply tf-validate tf-format tf-lint-fix \
+.PHONY: help tf-init tf-plan tf-show tf-output tf-apply tf-validate tf-format tf-lint-fix tf-providers-lock \
         ansible ansible-shell ansible-install ansible-inventory ansible-lint ansible-lint-fix
 
 TF_DIR := src/tf
 ANSIBLE_DIR := src/ansible
+ENVRC := $(CURDIR)/.envrc
 SHELL := bash
 
 help:
@@ -15,6 +16,7 @@ help:
 	@echo "  Validate:          make tf-validate"
 	@echo "  Format check:      make tf-format"
 	@echo "  Format fix:        make tf-lint-fix"
+	@echo "  Providers lock:    make tf-providers-lock"
 	@echo ""
 	@echo "Ansible commands:"
 	@echo "  Install deps:      make ansible-install"
@@ -49,6 +51,15 @@ tf-format:
 
 tf-lint-fix:
 	@cd $(TF_DIR) && tofu fmt -recursive
+
+tf-providers-lock:
+	@source "$(ENVRC)" && cd $(TF_DIR) && tofu providers lock \
+		-platform=darwin_amd64 \
+		-platform=darwin_arm64 \
+		-platform=linux_amd64 \
+		-platform=linux_arm64 \
+		-platform=windows_amd64 \
+		-platform=windows_arm64
 
 # --- Ansible ---
 
