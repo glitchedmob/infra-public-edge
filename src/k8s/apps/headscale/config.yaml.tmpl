@@ -39,6 +39,19 @@ dns:
   override_local_dns: false
   magic_dns: true
   base_domain: headnet.levizitting.com
+  extra_records:
+    - name: "router.headnet.levizitting.com"
+      type: "A"
+      value: "10.0.0.1"
+    - name: "switch.headnet.levizitting.com"
+      type: "A"
+      value: "10.0.0.2"
+    - name: "sgfdevs-k3s-01.headnet.levizitting.com"
+      type: "A"
+      value: "10.20.4.10"
+    - name: "sgfdevs-k3s-02.headnet.levizitting.com"
+      type: "A"
+      value: "10.20.4.11"
 log:
   format: text
 tracing:
