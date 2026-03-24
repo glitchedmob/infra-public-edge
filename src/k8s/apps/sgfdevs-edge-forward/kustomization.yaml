@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - service-sgfdevs-k3s-01.yaml
+  - service-sgfdevs-k3s-02.yaml
+  - traefikservice-origin-pool.yaml
+  - ingressroute-wildcard.yaml

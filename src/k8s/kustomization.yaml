@@ -5,5 +5,4 @@ resources:
   - infrastructure/external-secrets
   - infrastructure/cert-manager
   - infrastructure/reloader
-  - apps/headscale
-  - apps/headplane
+  - apps
