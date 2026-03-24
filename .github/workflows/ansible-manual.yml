@@ -10,6 +10,7 @@ on:
         options:
           - bootstrap.yml
           - apply.yml
+          - tailscale-headscale.yml
 
 permissions:
   contents: read

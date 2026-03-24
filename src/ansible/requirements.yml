@@ -4,6 +4,7 @@ collections:
   - name: amazon.aws
   - name: ansible.posix
   - name: community.general
+  - name: artis3n.tailscale
   - name: https://github.com/k3s-io/k3s-ansible.git
     type: git
     version: 1.1.1

@@ -113,6 +113,8 @@ resource "ansible_host" "this" {
     ssm_github_status_token_path    = aws_ssm_parameter.github_status_token.name
     domain                          = data.cloudflare_zone.levizitting_com.name
     headscale_hostname              = "${local.headscale_hostname}.${data.cloudflare_zone.levizitting_com.name}"
+    tailscale_login_server          = "https://${local.headscale_hostname}.${data.cloudflare_zone.levizitting_com.name}"
+    ssm_tailscale_authkey_path      = "/homelab/headscale/infra-public-edge/${local.hostname}-auth-key"
   }
 }
 
