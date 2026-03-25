@@ -1,48 +1,28 @@
 # infra-public-edge
 
-Public VPS infrastructure for glitchedmob. Manages a Vultr VPS running k3s with Headscale, deployed via Ansible and managed with Flux GitOps.
+Provisions and operates the LZ public edge platform, including the VPS and Kubernetes resources that route public traffic and run edge-hosted services.
 
 ## Scope
+- Owns: public edge VPS provisioning, cluster bootstrap, and edge-cluster Kubernetes resources.
+- Owns: public DNS entrypoint and edge forwarding paths for `levizitting.com` and `sgf.dev` traffic.
 
-- **OpenTofu (`src/tf/`)**: provisions Vultr VPS resources, Cloudflare DNS, and AWS SSM parameters.
-- **Ansible (`src/ansible/`)**: runs host automation and cluster bootstrap operations.
-- **Kubernetes (`src/k8s/`)**: holds Flux-managed manifests for edge platform services.
+## Structure
+- `src/tf/`: Provisions Vultr compute/firewall, Cloudflare DNS records, and AWS SSM parameters.
+- `src/ansible/`: Bootstraps host and k3s, then applies base cluster configuration.
+- `src/k8s/`: Kubernetes manifests for edge services and domain forwarding behavior.
 
-## Prerequisites
+## Edge routing model
+- Public hostnames resolve to the edge node (`x86-vps-node-01.levizitting.com`).
+- Traefik on the edge cluster forwards zone traffic to internal workload clusters.
+- HTTPS for forwarded zones uses TCP passthrough at the edge; TLS terminates on destination clusters.
+- Destination app ingresses are defined in [`glitchedmob/infra-k8s-apps`](https://github.com/glitchedmob/infra-k8s-apps) and [`sgfdevs/infra-k8s-apps`](https://github.com/sgfdevs/infra-k8s-apps).
 
-- [OpenTofu](https://opentofu.org/) >= 1.11 (version in `src/tf/.tofu-version`)
-- [uv](https://docs.astral.sh/uv/) >= 0.10 (for Ansible tooling)
-- AWS credentials (for SSM parameter access)
-- Vultr API token
-- Cloudflare API token
-
-## Usage
-
-### Terraform
-
+## Run
 ```bash
+make help
 make tf-init
 make tf-plan
-make tf-show ARGS=tfplan
-make tf-output
-make tf-apply
-make tf-validate
-make tf-format
-make tf-lint-fix
-```
-
-### Ansible
-
-```bash
 make ansible-install
-make ansible PLAYBOOK=site.yml
-make ansible-shell HOST=x86-node-01 COMMAND='uname -a'
-make ansible-inventory ARGS='--list'
-make ansible-lint
-make ansible-lint-fix
+make ansible PLAYBOOK=bootstrap.yml
+make ansible PLAYBOOK=apply.yml
 ```
-
-## Operational Notes
-
-- `src/k8s/` manifests are reconciled by Flux after bootstrap.
-- CI validates changes; infrastructure apply workflows remain operator-driven.
