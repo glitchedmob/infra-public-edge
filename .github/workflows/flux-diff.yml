@@ -98,12 +98,10 @@ jobs:
           } >> flux-diff.txt
 
           kustomizations='[
-            {"name": "public-vps-cert-manager", "path": "src/k8s/infrastructure/cert-manager"},
-            {"name": "public-vps-cert-manager-issuers", "path": "src/k8s/infrastructure/cert-manager-issuers"},
-            {"name": "public-vps-external-secrets", "path": "src/k8s/infrastructure/external-secrets"},
-            {"name": "public-vps-external-secrets-stores", "path": "src/k8s/infrastructure/external-secrets-stores"},
-            {"name": "public-vps-reloader", "path": "src/k8s/infrastructure/reloader"},
-            {"name": "public-vps-apps", "path": "src/k8s/apps"}
+            {"name": "public-edge-bootstrap-controllers", "path": "src/k8s/bootstrap/controllers"},
+            {"name": "public-edge-bootstrap-config", "path": "src/k8s/bootstrap/config"},
+            {"name": "public-edge-infrastructure", "path": "src/k8s/infrastructure"},
+            {"name": "public-edge-apps", "path": "src/k8s/apps"}
           ]'
 
           echo "$kustomizations" | jq -r '.[] | "\(.name)\t\(.path)"' | while IFS=$'\t' read -r name path; do

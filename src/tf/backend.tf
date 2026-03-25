@@ -3,7 +3,7 @@
 terraform {
   backend "s3" {
     bucket         = "levizitting-infra-tf-state"
-    key            = "public-vps/terraform.tfstate"
+    key            = "public-edge/terraform.tfstate"
     region         = "us-east-2"
     dynamodb_table = "terraform-locks"
     encrypt        = true
