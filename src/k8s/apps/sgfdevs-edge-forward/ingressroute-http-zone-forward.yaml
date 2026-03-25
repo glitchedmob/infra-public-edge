@@ -1,0 +1,18 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: sgfdevs-http-zone-forward
+  namespace: edge-routing
+spec:
+  entryPoints:
+    - web
+  routes:
+    - kind: Rule
+      match: Host(`sgf.dev`) || HostRegexp(`^([a-z0-9-]+\\.)*sgf\\.dev$`)
+      services:
+        - name: sgfdevs-k3s-01
+          port: 80
+          weight: 1
+        - name: sgfdevs-k3s-02
+          port: 80
+          weight: 1
