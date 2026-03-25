@@ -4,3 +4,4 @@ resources:
   - headscale
   - headplane
   - sgfdevs-edge-forward
+  - lz-edge-forward

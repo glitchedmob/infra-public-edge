@@ -1,0 +1,7 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - service-lz-k3s-01.yaml
+  - service-lz-k3s-02.yaml
+  - ingressroute-http-zone-forward.yaml
+  - ingressroutetcp-levizitting-zone-passthrough.yaml

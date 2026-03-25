@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: lz-k3s-02
+  namespace: edge-routing
+spec:
+  type: ExternalName
+  externalName: lz-k3s-02.headnet.levizitting.com
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+    - name: https
+      port: 443
+      targetPort: 443
