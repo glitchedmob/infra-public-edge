@@ -4,5 +4,7 @@ resources:
   - namespace.yaml
   - service-sgfdevs-k3s-01.yaml
   - service-sgfdevs-k3s-02.yaml
+  - middleware-https-redirect.yaml
+  - ingressroute-http-redirect.yaml
   - traefikservice-origin-pool.yaml
   - ingressroute-wildcard.yaml

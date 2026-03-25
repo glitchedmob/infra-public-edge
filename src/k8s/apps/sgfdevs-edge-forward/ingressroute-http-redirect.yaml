@@ -1,16 +1,16 @@
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
-  name: sgfdevs-wildcard-forward
+  name: sgfdevs-http-redirect
   namespace: edge-routing
 spec:
   entryPoints:
-    - websecure
+    - web
   routes:
     - kind: Rule
       match: Host(`sgf.dev`) || HostRegexp(`{subdomain:[a-z0-9-]+}.sgf.dev`)
+      middlewares:
+        - name: redirect-to-https
       services:
         - kind: TraefikService
           name: sgfdevs-origin-pool
-  tls:
-    certResolver: edge-acme

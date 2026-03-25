@@ -1,0 +1,18 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    additionalArguments:
+      - "--providers.kubernetescrd.allowExternalNameServices=true"
+      - "--providers.kubernetesingress.allowExternalNameServices=true"
+      - "--certificatesresolvers.edge-acme.acme.email=me@levizitting.com"
+      - "--certificatesresolvers.edge-acme.acme.storage=/data/acme.json"
+      - "--certificatesresolvers.edge-acme.acme.tlschallenge=true"
+    persistence:
+      enabled: true
+      path: /data
+      accessMode: ReadWriteOnce
+      size: 128Mi
