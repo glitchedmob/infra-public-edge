@@ -29,3 +29,4 @@
         tailscale_args: >-
           --login-server={{ tailscale_login_server }}
           --accept-routes
+          --advertise-tags=tag:infra-public-edge
