@@ -47,7 +47,7 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: public-vps-apps
+  name: public-edge-apps
   namespace: flux-system
 spec:
   interval: 5m
