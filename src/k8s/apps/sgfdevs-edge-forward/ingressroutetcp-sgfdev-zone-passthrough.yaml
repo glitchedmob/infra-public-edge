@@ -7,7 +7,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: HostSNIRegexp(`^([a-z0-9-]+\\.)*sgf\\.dev$`)
+    - match: HostSNIRegexp(`^([a-z0-9-]+\.)*sgf\.dev$`)
       services:
         - name: sgfdevs-k3s-01
           port: 443
