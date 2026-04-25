@@ -1,8 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - traefik
-  - cert-manager
-  - external-secrets
-  - k8up
-  - reloader
+  - namespace.yaml
+  - helmrepository.yaml
+  - helmrelease.yaml
