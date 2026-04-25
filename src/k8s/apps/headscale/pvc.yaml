@@ -3,6 +3,8 @@ kind: PersistentVolumeClaim
 metadata:
   name: headscale-data
   namespace: headscale
+  labels:
+    backup.k8up.io/app: headscale
 spec:
   accessModes:
     - ReadWriteOnce
