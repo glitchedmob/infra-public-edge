@@ -14,4 +14,6 @@ resources:
   - deployment.yaml
   - ingress.yaml
   - externalsecret-config.yaml
+  - externalsecret-k8up-b2-credentials.yaml
+  - externalsecret-k8up-repo-password.yaml
   - eso-k8s-store.yaml

@@ -14,3 +14,4 @@ resources:
   - ingress.yaml
   - externalsecret.yaml
   - externalsecret-config.yaml
+  - externalsecret-k8up-repo-password.yaml
