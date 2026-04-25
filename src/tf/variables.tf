@@ -20,3 +20,15 @@ variable "aws_region" {
   type    = string
   default = "us-east-2"
 }
+
+variable "b2_application_key_id" {
+  description = "Backblaze B2 application key ID for Terraform bucket management"
+  type        = string
+  sensitive   = true
+}
+
+variable "b2_application_key" {
+  description = "Backblaze B2 application key for Terraform bucket management"
+  type        = string
+  sensitive   = true
+}
