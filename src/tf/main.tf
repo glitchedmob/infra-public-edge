@@ -8,17 +8,18 @@ locals {
     { protocol = "udp", port = "3478", ip_types = ["v4", "v6"], notes = "Allow DERP" },
     { protocol = "tcp", port = "3478", ip_types = ["v4", "v6"], notes = "Allow DERP" },
   ]
-  user                                     = "admin"
-  ipv6_normalized                          = cidrhost("${vultr_instance.this.v6_main_ip}/128", 0)
-  headscale_hostname                       = "headscale"
-  hostname                                 = "x86-vps-node-01"
-  vps_fqdn                                 = "${local.hostname}.${data.cloudflare_zone.levizitting_com.name}"
-  flux_access_key_id_ssm_path              = "/homelab/${local.hostname}/flux-ssm-access-key-id"
-  flux_secret_access_key_ssm_path          = "/homelab/${local.hostname}/flux-ssm-secret-access-key"
-  github_status_token_ssm_path             = "/homelab/${local.hostname}/flux-github-status-token"
-  capacitor_admin_password_ssm_path        = "/homelab/${local.hostname}/capacitor-admin-password"
-  capacitor_admin_password_bcrypt_ssm_path = "/homelab/${local.hostname}/capacitor-admin-password-bcrypt"
-  capacitor_password_version               = 1
+  user                               = "admin"
+  ipv6_normalized                    = cidrhost("${vultr_instance.this.v6_main_ip}/128", 0)
+  headscale_hostname                 = "headscale"
+  hostname                           = "x86-vps-node-01"
+  vps_fqdn                           = "${local.hostname}.${data.cloudflare_zone.levizitting_com.name}"
+  flux_access_key_id_ssm_path        = "/homelab/${local.hostname}/flux-ssm-access-key-id"
+  flux_secret_access_key_ssm_path    = "/homelab/${local.hostname}/flux-ssm-secret-access-key"
+  github_status_token_ssm_path       = "/homelab/${local.hostname}/flux-github-status-token"
+  dex_admin_password_ssm_path        = "/homelab/${local.hostname}/dex-admin-password"
+  dex_admin_password_bcrypt_ssm_path = "/homelab/${local.hostname}/dex-admin-password-bcrypt"
+  dex_password_version               = 1
+  flux_web_client_secret_ssm_path    = "/homelab/${local.hostname}/flux-web-client-secret"
 }
 
 module "ssh_key" {
@@ -55,24 +56,36 @@ resource "aws_ssm_parameter" "github_status_token" {
   value_wo_version = 1
 }
 
-ephemeral "random_password" "capacitor_admin" {
+ephemeral "random_password" "dex_admin" {
   length           = 24
   special          = true
   override_special = "!#$%&*()-_=+[]{}<>:?"
 }
 
-resource "aws_ssm_parameter" "capacitor_admin_password" {
-  name             = local.capacitor_admin_password_ssm_path
-  type             = "SecureString"
-  value_wo         = ephemeral.random_password.capacitor_admin.result
-  value_wo_version = local.capacitor_password_version
+ephemeral "random_password" "flux_web_client_secret" {
+  length  = 32
+  special = false
 }
 
-resource "aws_ssm_parameter" "capacitor_admin_password_bcrypt" {
-  name             = local.capacitor_admin_password_bcrypt_ssm_path
+resource "aws_ssm_parameter" "dex_admin_password" {
+  name             = local.dex_admin_password_ssm_path
   type             = "SecureString"
-  value_wo         = "me@levizitting.com:${ephemeral.random_password.capacitor_admin.bcrypt_hash}"
-  value_wo_version = local.capacitor_password_version
+  value_wo         = ephemeral.random_password.dex_admin.result
+  value_wo_version = local.dex_password_version
+}
+
+resource "aws_ssm_parameter" "dex_admin_password_bcrypt" {
+  name             = local.dex_admin_password_bcrypt_ssm_path
+  type             = "SecureString"
+  value_wo         = ephemeral.random_password.dex_admin.bcrypt_hash
+  value_wo_version = local.dex_password_version
+}
+
+resource "aws_ssm_parameter" "flux_web_client_secret" {
+  name             = local.flux_web_client_secret_ssm_path
+  type             = "SecureString"
+  value_wo         = ephemeral.random_password.flux_web_client_secret.result
+  value_wo_version = 1
 }
 
 resource "vultr_firewall_group" "this" {
