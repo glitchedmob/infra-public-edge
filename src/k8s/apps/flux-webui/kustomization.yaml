@@ -4,6 +4,8 @@ namespace: flux-system
 generatorOptions:
   disableNameSuffixHash: true
 resources:
+  - ingressroute-http-redirect.yaml
+  - middleware-https-redirect.yaml
   - helmrepository.yaml
   - externalsecret-flux-client.yaml
   - helmrelease.yaml
