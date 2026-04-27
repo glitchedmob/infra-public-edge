@@ -27,20 +27,20 @@ spec:
             provider: OIDC
             issuerURL: https://dex.levizitting.com
             clientID: flux-web
-    ingress:
-      enabled: true
-      className: traefik
-      annotations:
-        cert-manager.io/cluster-issuer: letsencrypt-prod
-      hosts:
-        - host: flux.levizitting.com
-          paths:
-            - path: /
-              pathType: Prefix
-      tls:
-        - secretName: flux-web-tls
-          hosts:
-            - flux.levizitting.com
+      ingress:
+        enabled: true
+        className: traefik
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-prod
+        hosts:
+          - host: flux.levizitting.com
+            paths:
+              - path: /
+                pathType: Prefix
+        tls:
+          - secretName: flux-web-tls
+            hosts:
+              - flux.levizitting.com
     resources:
       requests:
         cpu: 100m
