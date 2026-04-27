@@ -14,6 +14,7 @@ resources:
   - deployment.yaml
   - ingress.yaml
   - k8up-schedule.yaml
+  - prebackuppod.yaml
   - externalsecret-config.yaml
   - externalsecret-k8up-b2-credentials.yaml
   - externalsecret-k8up-repo-password.yaml

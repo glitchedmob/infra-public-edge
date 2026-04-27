@@ -3,8 +3,8 @@ kind: PersistentVolumeClaim
 metadata:
   name: headplane-data
   namespace: headscale
-  labels:
-    backup.k8up.io/app: headplane
+  annotations:
+    k8up.io/backup: "false"
 spec:
   accessModes:
     - ReadWriteOnce
