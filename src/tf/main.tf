@@ -8,14 +8,17 @@ locals {
     { protocol = "udp", port = "3478", ip_types = ["v4", "v6"], notes = "Allow DERP" },
     { protocol = "tcp", port = "3478", ip_types = ["v4", "v6"], notes = "Allow DERP" },
   ]
-  user                            = "admin"
-  ipv6_normalized                 = cidrhost("${vultr_instance.this.v6_main_ip}/128", 0)
-  headscale_hostname              = "headscale"
-  hostname                        = "x86-vps-node-01"
-  vps_fqdn                        = "${local.hostname}.${data.cloudflare_zone.levizitting_com.name}"
-  flux_access_key_id_ssm_path     = "/homelab/${local.hostname}/flux-ssm-access-key-id"
-  flux_secret_access_key_ssm_path = "/homelab/${local.hostname}/flux-ssm-secret-access-key"
-  github_status_token_ssm_path    = "/homelab/${local.hostname}/flux-github-status-token"
+  user                                     = "admin"
+  ipv6_normalized                          = cidrhost("${vultr_instance.this.v6_main_ip}/128", 0)
+  headscale_hostname                       = "headscale"
+  hostname                                 = "x86-vps-node-01"
+  vps_fqdn                                 = "${local.hostname}.${data.cloudflare_zone.levizitting_com.name}"
+  flux_access_key_id_ssm_path              = "/homelab/${local.hostname}/flux-ssm-access-key-id"
+  flux_secret_access_key_ssm_path          = "/homelab/${local.hostname}/flux-ssm-secret-access-key"
+  github_status_token_ssm_path             = "/homelab/${local.hostname}/flux-github-status-token"
+  capacitor_admin_password_ssm_path        = "/homelab/${local.hostname}/capacitor-admin-password"
+  capacitor_admin_password_bcrypt_ssm_path = "/homelab/${local.hostname}/capacitor-admin-password-bcrypt"
+  capacitor_password_version               = 1
 }
 
 module "ssh_key" {
@@ -50,6 +53,26 @@ resource "aws_ssm_parameter" "github_status_token" {
   type             = "SecureString"
   value_wo         = "CHANGEME"
   value_wo_version = 1
+}
+
+ephemeral "random_password" "capacitor_admin" {
+  length           = 24
+  special          = true
+  override_special = "!#$%&*()-_=+[]{}<>:?"
+}
+
+resource "aws_ssm_parameter" "capacitor_admin_password" {
+  name             = local.capacitor_admin_password_ssm_path
+  type             = "SecureString"
+  value_wo         = ephemeral.random_password.capacitor_admin.result
+  value_wo_version = local.capacitor_password_version
+}
+
+resource "aws_ssm_parameter" "capacitor_admin_password_bcrypt" {
+  name             = local.capacitor_admin_password_bcrypt_ssm_path
+  type             = "SecureString"
+  value_wo         = "me@levizitting.com:${ephemeral.random_password.capacitor_admin.bcrypt_hash}"
+  value_wo_version = local.capacitor_password_version
 }
 
 resource "vultr_firewall_group" "this" {
@@ -116,31 +139,4 @@ resource "ansible_host" "this" {
     tailscale_login_server          = "https://${local.headscale_hostname}.${data.cloudflare_zone.levizitting_com.name}"
     ssm_tailscale_authkey_path      = "/homelab/headscale/infra-public-edge/${local.hostname}-auth-key"
   }
-}
-
-resource "cloudflare_dns_record" "this_a" {
-  zone_id = data.cloudflare_zone.levizitting_com.id
-  name    = local.hostname
-  type    = "A"
-  content = vultr_instance.this.main_ip
-  proxied = false
-  ttl     = 300
-}
-
-resource "cloudflare_dns_record" "this_aaaa" {
-  zone_id = data.cloudflare_zone.levizitting_com.id
-  name    = local.hostname
-  type    = "AAAA"
-  content = local.ipv6_normalized
-  proxied = false
-  ttl     = 300
-}
-
-resource "cloudflare_dns_record" "headscale_alias" {
-  zone_id = data.cloudflare_zone.levizitting_com.id
-  name    = local.headscale_hostname
-  type    = "CNAME"
-  content = local.vps_fqdn
-  proxied = false
-  ttl     = 300
 }

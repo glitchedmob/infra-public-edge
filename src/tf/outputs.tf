@@ -44,3 +44,13 @@ output "backup_restic_password_ssm_paths" {
     for app, param in aws_ssm_parameter.restic_password : app => param.name
   }
 }
+
+output "ssm_capacitor_admin_password_path" {
+  description = "SSM Parameter Store path for Capacitor admin plaintext password"
+  value       = aws_ssm_parameter.capacitor_admin_password.name
+}
+
+output "ssm_capacitor_admin_password_bcrypt_path" {
+  description = "SSM Parameter Store path for Capacitor admin bcrypt users string"
+  value       = aws_ssm_parameter.capacitor_admin_password_bcrypt.name
+}
