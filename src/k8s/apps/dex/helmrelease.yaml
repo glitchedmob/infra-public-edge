@@ -1,0 +1,65 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: dex
+  namespace: dex
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: dex
+      version: "0.22.0"
+      sourceRef:
+        kind: HelmRepository
+        name: dex
+        namespace: dex
+  install:
+    createNamespace: false
+  values:
+    config:
+      issuer: https://dex.levizitting.com
+      storage:
+        type: memory
+      enablePasswordDB: true
+      staticPasswords:
+        - email: me@levizitting.com
+          hashFromEnv: DEX_ADMIN_PASSWORD_HASH
+          username: me
+          userID: 550e8400-e29b-41d4-a716-446655440000
+      staticClients:
+        - id: flux-web
+          redirectURIs:
+            - https://flux.levizitting.com/oauth2/callback
+          name: Flux Web UI
+    envVars:
+      - name: DEX_ADMIN_PASSWORD_HASH
+        valueFrom:
+          secretKeyRef:
+            name: dex-admin-password-bcrypt
+            key: hash
+    ingress:
+      enabled: true
+      className: traefik
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+      hosts:
+        - host: dex.levizitting.com
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+      tls:
+        - secretName: dex-tls
+          hosts:
+            - dex.levizitting.com
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+  valuesFrom:
+    - kind: Secret
+      name: flux-web-client
+      valuesKey: client-secret
+      targetPath: config.staticClients[0].secret

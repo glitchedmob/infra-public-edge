@@ -1,8 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: capacitor-config
-  namespace: capacitor
-data:
-  AUTH: "static"
-  IMPERSONATE_SA_RULES: "me@levizitting.com=capacitor:capacitor-next-admin"
