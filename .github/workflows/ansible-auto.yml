@@ -8,6 +8,10 @@ on:
       - src/ansible/playbooks/manifests/**
       - .github/workflows/ansible-auto.yml
 
+# To switch to public SSH (e.g. during a from-scratch rebuild where Headscale is down):
+#   1. Set envrc_content: 'export EDGE_CONNECTION_MODE=public'
+#   2. Comment out headscale-login-server
+
 permissions:
   contents: read
   id-token: write
@@ -20,6 +24,9 @@ jobs:
       initialize-terraform: true
       terraform-working-directory: src/tf
       trigger-map: '{"apply.yml": ["src/ansible/playbooks/apply.yml", "src/ansible/playbooks/manifests"]}'
+      headscale-login-server: https://headscale.levizitting.com
     secrets:
+      envrc_content: ''
       aws_role_arn: ${{ secrets.AWS_ROLE_ARN }}
       output_encryption_key: ${{ secrets.OUTPUT_ENCRYPTION_KEY }}
+      headscale_auth_key: ${{ secrets.HEADSCALE_AUTH_KEY }}

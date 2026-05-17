@@ -27,6 +27,15 @@ make ansible PLAYBOOK=bootstrap.yml
 make ansible PLAYBOOK=apply.yml
 ```
 
+## Connectivity
+
+Ansible and GitHub Actions reach the edge node over Tailscale by default. The Terraform inventory exposes both `public_ssh_host` and `tailscale_ssh_host`, and `group_vars/all.yml` selects the target based on `EDGE_CONNECTION_MODE` (default: `tailscale`).
+
+- **Tailscale mode** (default): Ansible targets the MagicDNS hostname `x86-vps-node-01`. GitHub Actions joins Headscale before running playbooks.
+- **Public mode**: Set `EDGE_CONNECTION_MODE=public` to target the Vultr public IP instead. GitHub Actions workflows offer a `connectivity-mode` dropdown for manual runs; automated workflows have a commented toggle at the top of the file.
+
+To rebuild the node from scratch, temporarily re-enable public SSH in the Vultr firewall (`src/tf/main.tf`) and switch GitHub Actions to public mode until the node is enrolled in Headscale again.
+
 ## Local cluster access
 ```bash
 make kubeconfig

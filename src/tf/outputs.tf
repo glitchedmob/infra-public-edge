@@ -13,6 +13,11 @@ output "vps_hostname" {
   value       = local.vps_fqdn
 }
 
+output "vps_tailscale_host" {
+  description = "Tailscale/MagicDNS hostname for the VPS"
+  value       = local.hostname
+}
+
 output "ansible_user" {
   description = "Ansible SSH user for the VPS"
   value       = local.user

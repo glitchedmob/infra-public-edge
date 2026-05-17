@@ -4,6 +4,10 @@ on:
   pull_request:
     paths: [src/k8s/**]
 
+# To switch to public SSH connectivity, change EDGE_CONNECTION_MODE to 'public'.
+env:
+  EDGE_CONNECTION_MODE: tailscale
+
 permissions:
   contents: read
   id-token: write
@@ -27,6 +31,13 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-2
 
+      - name: Connect Headscale
+        if: env.EDGE_CONNECTION_MODE == 'tailscale'
+        uses: tailscale/github-action@v4
+        with:
+          authkey: ${{ secrets.HEADSCALE_AUTH_KEY }}
+          args: --login-server=https://headscale.levizitting.com
+
       - uses: opentofu/setup-opentofu@v2
         with:
           tofu_version_file: src/tf/.tofu-version
@@ -39,10 +50,17 @@ jobs:
         id: tf-outputs
         working-directory: src/tf
         run: |
+          vps_user=$(tofu output -raw ansible_user)
+          ssm_key_path=$(tofu output -raw ssm_private_key_path)
+          if [ "${{ env.EDGE_CONNECTION_MODE }}" = "public" ]; then
+            ssh_host=$(tofu output -raw vps_hostname)
+          else
+            ssh_host=$(tofu output -raw vps_tailscale_host)
+          fi
           {
-            echo "vps_host=$(tofu output -raw vps_hostname)"
-            echo "vps_user=$(tofu output -raw ansible_user)"
-            echo "ssm_key_path=$(tofu output -raw ssm_private_key_path)"
+            echo "ssh_host=$ssh_host"
+            echo "vps_user=$vps_user"
+            echo "ssm_key_path=$ssm_key_path"
           } >> "$GITHUB_OUTPUT"
 
       - name: Fetch SSH key from SSM
@@ -57,7 +75,7 @@ jobs:
 
       - name: Add host key
         env:
-          VPS_HOST: ${{ steps.tf-outputs.outputs.vps_host }}
+          VPS_HOST: ${{ steps.tf-outputs.outputs.ssh_host }}
         run: |
           known_hosts="$RUNNER_TEMP/known_hosts"
           ssh-keyscan -t ed25519 "$VPS_HOST" >> "$known_hosts"
@@ -65,7 +83,7 @@ jobs:
 
       - name: Fetch kubeconfig
         env:
-          VPS_HOST: ${{ steps.tf-outputs.outputs.vps_host }}
+          VPS_HOST: ${{ steps.tf-outputs.outputs.ssh_host }}
           VPS_USER: ${{ steps.tf-outputs.outputs.vps_user }}
         run: |
           kubeconfig="$RUNNER_TEMP/kubeconfig"
@@ -76,7 +94,7 @@ jobs:
 
       - name: Start SSH tunnel
         env:
-          VPS_HOST: ${{ steps.tf-outputs.outputs.vps_host }}
+          VPS_HOST: ${{ steps.tf-outputs.outputs.ssh_host }}
           VPS_USER: ${{ steps.tf-outputs.outputs.vps_user }}
         run: |
           ssh -i "$SSH_KEY_PATH" -o UserKnownHostsFile="$KNOWN_HOSTS_PATH" \

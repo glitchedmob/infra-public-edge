@@ -138,7 +138,8 @@ resource "ansible_host" "this" {
   name = local.hostname
   variables = {
     ansible_user                    = local.user
-    ansible_host                    = vultr_instance.this.main_ip
+    public_ssh_host                 = vultr_instance.this.main_ip
+    tailscale_ssh_host              = local.hostname
     public_ipv4                     = vultr_instance.this.main_ip
     public_ipv6                     = vultr_instance.this.v6_main_ip
     ssm_private_key_path            = module.ssh_key.ssm_path

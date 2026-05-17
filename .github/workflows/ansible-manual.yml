@@ -12,6 +12,14 @@ on:
           - bootstrap.yml
           - apply.yml
           - tailscale-headscale.yml
+      connectivity-mode:
+        description: How to reach the edge node
+        required: true
+        type: choice
+        options:
+          - tailscale
+          - public
+        default: tailscale
 
 permissions:
   contents: read
@@ -26,6 +34,9 @@ jobs:
       initialize-terraform: true
       terraform-working-directory: src/tf
       playbook: ${{ inputs.playbook }}
+      headscale-login-server: ${{ inputs.connectivity-mode == 'tailscale' && 'https://headscale.levizitting.com' || '' }}
     secrets:
+      envrc_content: ${{ inputs.connectivity-mode == 'public' && 'export EDGE_CONNECTION_MODE=public' || '' }}
       aws_role_arn: ${{ secrets.AWS_ROLE_ARN }}
       output_encryption_key: ${{ secrets.OUTPUT_ENCRYPTION_KEY }}
+      headscale_auth_key: ${{ inputs.connectivity-mode == 'tailscale' && secrets.HEADSCALE_AUTH_KEY || '' }}
