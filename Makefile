@@ -1,5 +1,6 @@
 .PHONY: help tf-init tf-plan tf-show tf-output tf-apply tf-validate tf-format tf-lint-fix tf-providers-lock \
-        ansible ansible-shell ansible-install ansible-inventory ansible-lint ansible-lint-fix
+        ansible ansible-shell ansible-install ansible-inventory ansible-lint ansible-lint-fix \
+        kubeconfig kubectl k9s
 
 TF_DIR := src/tf
 ANSIBLE_DIR := src/ansible
@@ -25,6 +26,11 @@ help:
 	@echo "  Shell command:     make ansible-shell HOST=host COMMAND='cmd' [ARGS='-v']"
 	@echo "  Lint:              make ansible-lint"
 	@echo "  Lint fix:          make ansible-lint-fix"
+	@echo ""
+	@echo "Local Kubernetes commands:"
+	@echo "  Fetch kubeconfig:  make kubeconfig"
+	@echo "  kubectl helper:    make kubectl ARGS='get nodes'"
+	@echo "  k9s helper:        make k9s"
 
 # --- OpenTofu ---
 
@@ -82,3 +88,13 @@ ansible-lint:
 
 ansible-lint-fix:
 	@cd $(ANSIBLE_DIR) && uv run ansible-lint --fix
+
+kubeconfig:
+	@$(MAKE) ansible PLAYBOOK=local-kubeconfig.yml
+
+
+kubectl:
+	@KUBECONFIG="$(HOME)/.kube/infra-public-edge.yaml" kubectl $(ARGS)
+
+k9s:
+	@KUBECONFIG="$(HOME)/.kube/infra-public-edge.yaml" k9s $(ARGS)
