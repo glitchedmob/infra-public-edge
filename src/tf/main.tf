@@ -2,7 +2,7 @@ locals {
   vultr_2_cpu_2_gb_ram      = "vc2-2c-2gb"
   vultr_debian_12_x64_os_id = 2625
   firewall_rules = [
-    { protocol = "tcp", port = "22", ip_types = ["v4", "v6"], notes = "Allow SSH" },
+    # { protocol = "tcp", port = "22", ip_types = ["v4", "v6"], notes = "Allow SSH" },
     { protocol = "tcp", port = "80", ip_types = ["v4", "v6"], notes = "Allow HTTP" },
     { protocol = "tcp", port = "443", ip_types = ["v4", "v6"], notes = "Allow HTTPS" },
     { protocol = "udp", port = "3478", ip_types = ["v4", "v6"], notes = "Allow DERP" },
@@ -95,9 +95,9 @@ resource "vultr_firewall_group" "this" {
 resource "vultr_firewall_rule" "fw_rules" {
   for_each = {
     for rule in flatten([
-      for idx, rule in local.firewall_rules : [
+      for _, rule in local.firewall_rules : [
         for ip_type in rule.ip_types : {
-          key         = "${idx}-${ip_type}-${rule.protocol}-${rule.port}"
+          key         = "${ip_type}-${rule.protocol}-${rule.port}"
           protocol    = rule.protocol
           port        = rule.port
           ip_type     = ip_type
