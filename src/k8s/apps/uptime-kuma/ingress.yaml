@@ -8,7 +8,7 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-    - host: uptime2.levizitting.com
+    - host: uptime.levizitting.com
       http:
         paths:
           - path: /
@@ -21,4 +21,4 @@ spec:
   tls:
     - secretName: uptime-kuma-tls
       hosts:
-        - uptime2.levizitting.com
+        - uptime.levizitting.com

@@ -8,7 +8,7 @@ spec:
     - web
   routes:
     - kind: Rule
-      match: HostRegexp(`^([a-z0-9-]+\.)*levizitting\.com$`) && !Host(`headscale.levizitting.com`) && !Host(`uptime2.levizitting.com`) && !Host(`levizitting.com`)
+      match: HostRegexp(`^([a-z0-9-]+\.)*levizitting\.com$`) && !Host(`headscale.levizitting.com`) && !Host(`uptime.levizitting.com`) && !Host(`levizitting.com`)
       services:
         - name: lz-k3s-01
           port: 80
