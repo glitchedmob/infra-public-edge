@@ -3,5 +3,6 @@ kind: Kustomization
 resources:
   - headscale
   - headplane
+  - uptime-kuma
   - sgfdevs-edge-forward
   - lz-edge-forward

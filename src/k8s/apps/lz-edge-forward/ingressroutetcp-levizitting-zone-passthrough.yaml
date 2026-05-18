@@ -7,7 +7,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: HostSNIRegexp(`^([a-z0-9-]+\.)*levizitting\.com$`) && !HostSNI(`headscale.levizitting.com`) && !HostSNI(`levizitting.com`)
+    - match: HostSNIRegexp(`^([a-z0-9-]+\.)*levizitting\.com$`) && !HostSNI(`headscale.levizitting.com`) && !HostSNI(`uptime2.levizitting.com`) && !HostSNI(`levizitting.com`)
       services:
         - name: lz-k3s-01
           port: 443
