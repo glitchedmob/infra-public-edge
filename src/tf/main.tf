@@ -1,5 +1,5 @@
 locals {
-  vultr_2_cpu_2_gb_ram      = "vc2-2c-2gb"
+  vultr_2_cpu_4_gb_ram      = "vc2-2c-4gb"
   vultr_debian_12_x64_os_id = 2625
   firewall_rules = [
     # { protocol = "tcp", port = "22", ip_types = ["v4", "v6"], notes = "Allow SSH" },
@@ -87,7 +87,7 @@ resource "vultr_firewall_rule" "fw_rules" {
 }
 
 resource "vultr_instance" "this" {
-  plan              = local.vultr_2_cpu_2_gb_ram
+  plan              = local.vultr_2_cpu_4_gb_ram
   region            = var.vultr_region
   os_id             = local.vultr_debian_12_x64_os_id
   label             = local.hostname
