@@ -50,17 +50,4 @@ output "backup_restic_password_ssm_paths" {
   }
 }
 
-output "ssm_dex_admin_password_path" {
-  description = "SSM Parameter Store path for Dex admin plaintext password"
-  value       = aws_ssm_parameter.dex_admin_password.name
-}
 
-output "ssm_dex_admin_password_bcrypt_path" {
-  description = "SSM Parameter Store path for Dex admin bcrypt hash"
-  value       = aws_ssm_parameter.dex_admin_password_bcrypt.name
-}
-
-output "ssm_flux_web_client_secret_path" {
-  description = "SSM Parameter Store path for Flux Web UI OIDC client secret"
-  value       = aws_ssm_parameter.flux_web_client_secret.name
-}

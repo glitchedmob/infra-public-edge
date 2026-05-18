@@ -31,20 +31,4 @@ resource "cloudflare_dns_record" "headscale_alias" {
   ttl     = 300
 }
 
-resource "cloudflare_dns_record" "flux" {
-  zone_id = data.cloudflare_zone.levizitting_com.id
-  name    = "flux"
-  type    = "CNAME"
-  content = local.vps_fqdn
-  proxied = false
-  ttl     = 300
-}
 
-resource "cloudflare_dns_record" "dex" {
-  zone_id = data.cloudflare_zone.levizitting_com.id
-  name    = "dex"
-  type    = "CNAME"
-  content = local.vps_fqdn
-  proxied = false
-  ttl     = 300
-}
