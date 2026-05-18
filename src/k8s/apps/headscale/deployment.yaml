@@ -42,6 +42,8 @@ spec:
                 - health
             initialDelaySeconds: 30
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
           readinessProbe:
             exec:
               command:
@@ -49,6 +51,15 @@ spec:
                 - health
             initialDelaySeconds: 5
             periodSeconds: 5
+            timeoutSeconds: 5
+          startupProbe:
+            exec:
+              command:
+                - headscale
+                - health
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 24
           resources:
             requests:
               memory: "256Mi"
