@@ -9,6 +9,7 @@ resource "cloudflare_dns_record" "this_a" {
   name    = local.hostname
   type    = "A"
   content = vultr_instance.this.main_ip
+  comment = local.dns_record_comment
   proxied = false
   ttl     = 300
 }
@@ -18,6 +19,7 @@ resource "cloudflare_dns_record" "this_aaaa" {
   name    = local.hostname
   type    = "AAAA"
   content = local.ipv6_normalized
+  comment = local.dns_record_comment
   proxied = false
   ttl     = 300
 }
@@ -27,17 +29,7 @@ resource "cloudflare_dns_record" "headscale_alias" {
   name    = local.headscale_hostname
   type    = "CNAME"
   content = local.vps_fqdn
+  comment = local.dns_record_comment
   proxied = false
   ttl     = 300
 }
-
-resource "cloudflare_dns_record" "uptime_alias" {
-  zone_id = data.cloudflare_zone.levizitting_com.id
-  name    = local.uptime_hostname
-  type    = "CNAME"
-  content = local.vps_fqdn
-  proxied = false
-  ttl     = 300
-}
-
-
