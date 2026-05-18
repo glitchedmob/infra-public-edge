@@ -1,7 +1,7 @@
 locals {
   backup_bucket_name = "levizitting-public-edge-backups"
   backup_ssm_prefix  = "/homelab/public-edge/backups"
-  backup_apps        = toset(["headscale", "headplane"])
+  backup_apps        = toset(["headscale", "headplane", "uptime-kuma"])
 }
 
 resource "b2_bucket" "backups" {

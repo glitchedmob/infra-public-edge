@@ -31,4 +31,13 @@ resource "cloudflare_dns_record" "headscale_alias" {
   ttl     = 300
 }
 
+resource "cloudflare_dns_record" "uptime_alias" {
+  zone_id = data.cloudflare_zone.levizitting_com.id
+  name    = local.uptime_hostname
+  type    = "CNAME"
+  content = local.vps_fqdn
+  proxied = false
+  ttl     = 300
+}
+
 

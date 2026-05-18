@@ -11,6 +11,7 @@ locals {
   user                            = "admin"
   ipv6_normalized                 = cidrhost("${vultr_instance.this.v6_main_ip}/128", 0)
   headscale_hostname              = "headscale"
+  uptime_hostname                 = "uptime2"
   hostname                        = "x86-vps-node-01"
   vps_fqdn                        = "${local.hostname}.${data.cloudflare_zone.levizitting_com.name}"
   flux_access_key_id_ssm_path     = "/homelab/${local.hostname}/flux-ssm-access-key-id"
