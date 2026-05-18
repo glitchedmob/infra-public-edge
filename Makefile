@@ -1,10 +1,15 @@
 .PHONY: help tf-init tf-plan tf-show tf-output tf-apply tf-validate tf-format tf-lint-fix tf-providers-lock \
         ansible ansible-shell ansible-install ansible-inventory ansible-lint ansible-lint-fix \
-        kubeconfig kubectl k9s
+        cluster-access kubectl k9s
 
 TF_DIR := src/tf
 ANSIBLE_DIR := src/ansible
 ENVRC := $(CURDIR)/.envrc
+LOCAL_DIR := $(CURDIR)/.local
+KUBECONFIG_PATH := $(LOCAL_DIR)/kube/infra-public-edge.yaml
+K9S_CONFIG_DIR := $(LOCAL_DIR)/k9s
+K9S_PLUGIN_DIR := $(K9S_CONFIG_DIR)/plugins
+FLUX_K9S_PLUGIN_URL := https://raw.githubusercontent.com/derailed/k9s/master/plugins/flux.yaml
 SHELL := bash
 
 help:
@@ -28,7 +33,7 @@ help:
 	@echo "  Lint fix:          make ansible-lint-fix"
 	@echo ""
 	@echo "Local Kubernetes commands:"
-	@echo "  Fetch kubeconfig:  make kubeconfig"
+	@echo "  Setup local access: make cluster-access"
 	@echo "  kubectl helper:    make kubectl ARGS='get nodes'"
 	@echo "  k9s helper:        make k9s"
 
@@ -89,12 +94,14 @@ ansible-lint:
 ansible-lint-fix:
 	@cd $(ANSIBLE_DIR) && uv run ansible-lint --fix
 
-kubeconfig:
-	@$(MAKE) ansible PLAYBOOK=local-kubeconfig.yml
+cluster-access:
+	@mkdir -p "$(dir $(KUBECONFIG_PATH))" "$(K9S_PLUGIN_DIR)"
+	@curl -fsSL "$(FLUX_K9S_PLUGIN_URL)" -o "$(K9S_PLUGIN_DIR)/flux.yaml"
+	@source .envrc 2>/dev/null || true && cd $(ANSIBLE_DIR) && uv run ansible-playbook playbooks/local-kubeconfig.yml -e kubeconfig_output_path="$(KUBECONFIG_PATH)"
 
 
 kubectl:
-	@KUBECONFIG="$(HOME)/.kube/infra-public-edge.yaml" kubectl $(ARGS)
+	@KUBECONFIG="$(KUBECONFIG_PATH)" kubectl $(ARGS)
 
 k9s:
-	@KUBECONFIG="$(HOME)/.kube/infra-public-edge.yaml" k9s $(ARGS)
+	@KUBECONFIG="$(KUBECONFIG_PATH)" K9S_CONFIG_DIR="$(K9S_CONFIG_DIR)" k9s $(ARGS)

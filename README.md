@@ -38,11 +38,11 @@ To rebuild the node from scratch, temporarily re-enable public SSH in the Vultr 
 
 ## Local cluster access
 ```bash
-make kubeconfig
+make cluster-access
 make kubectl ARGS='get nodes'
 make k9s
 ```
 
-- `make kubeconfig` fetches `/etc/rancher/k3s/k3s.yaml` from `x86-vps-node-01` and writes a local kubeconfig to `~/.kube/infra-public-edge.yaml`.
+- `make cluster-access` fetches `/etc/rancher/k3s/k3s.yaml`, writes it to `.local/kube/infra-public-edge.yaml`, and stages the upstream `derailed/k9s` Flux plugin in `.local/k9s/plugins/flux.yaml`.
 - The generated kubeconfig rewrites the API server endpoint to `https://x86-vps-node-01:6443` and sets `tls-server-name: x86-vps-node-01` so it works over Tailscale MagicDNS.
-- `make kubectl` and `make k9s` use `~/.kube/infra-public-edge.yaml`; run `make kubeconfig` once first and again when you want to refresh it.
+- `make kubectl` and `make k9s` use the staged files in `.local/`; run `make cluster-access` once first and again when you want to refresh them.
