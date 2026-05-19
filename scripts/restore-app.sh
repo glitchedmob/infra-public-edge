@@ -125,9 +125,13 @@ printf '==> Deleting any previous Job named %s\n' "$APP_JOB_NAME"
 kubectl -n "$APP_NAMESPACE" delete job "$APP_JOB_NAME" --ignore-not-found >/dev/null
 
 printf '==> Applying restore Job for %s\n' "$APP"
-kubectl create --dry-run=client --validate=false -f "$APP_MANIFEST" -o yaml \
-  | kubectl set env --local -f - SNAPSHOT_ID="$SNAPSHOT" SNAPSHOT_DATE="$SNAPSHOT_DATE" -o yaml \
-  | kubectl apply -f - >/dev/null
+if [ -z "$SNAPSHOT" ] && [ -z "$SNAPSHOT_DATE" ]; then
+  kubectl apply -f "$APP_MANIFEST" >/dev/null
+else
+  kubectl create --dry-run=client --validate=false -f "$APP_MANIFEST" -o yaml \
+    | kubectl set env --local -f - SNAPSHOT_ID="$SNAPSHOT" SNAPSHOT_DATE="$SNAPSHOT_DATE" -o yaml \
+    | kubectl apply -f - >/dev/null
+fi
 
 printf '==> Waiting for Job %s\n' "$APP_JOB_NAME"
 if ! kubectl -n "$APP_NAMESPACE" wait --for=condition=complete --timeout="$JOB_TIMEOUT" "job/$APP_JOB_NAME"; then
