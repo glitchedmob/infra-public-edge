@@ -52,6 +52,10 @@ done
   exit 1
 }
 
+if [ "$SNAPSHOT" = "latest" ]; then
+  SNAPSHOT=""
+fi
+
 command -v kubectl >/dev/null 2>&1 || { printf 'error: kubectl not found\n' >&2; exit 1; }
 command -v flux >/dev/null 2>&1 || { printf 'error: flux not found\n' >&2; exit 1; }
 [ -n "${KUBECONFIG:-}" ] || { printf 'error: KUBECONFIG must be set\n' >&2; exit 1; }

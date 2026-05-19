@@ -16,7 +16,7 @@ spec:
   pod:
     spec:
       containers:
-        - name: sqlite-backup
+        - name: backup
           image: keinos/sqlite3:3.51.3
           command:
             - sh
