@@ -26,7 +26,6 @@ spec:
                 --restoreType=folder
                 --restoreDir=/work
                 --restoreFilter=/headscale-backup.tar
-                --resticRepository="b2:${BACKUP_BUCKET}:${BACKUP_PATH}"
               )
 
               if [[ -n "${SNAPSHOT_ID}" ]]; then
@@ -42,10 +41,8 @@ spec:
               find /data -mindepth 1 -maxdepth 1 -exec rm -rf {} +
               tar -xf /work/headscale-backup.tar -C /data
           env:
-            - name: BACKUP_BUCKET
-              value: levizitting-public-edge-backups
-            - name: BACKUP_PATH
-              value: headscale
+            - name: RESTIC_REPOSITORY
+              value: b2:levizitting-public-edge-backups:headscale
             - name: SNAPSHOT_ID
               value: ""
             - name: SNAPSHOT_DATE

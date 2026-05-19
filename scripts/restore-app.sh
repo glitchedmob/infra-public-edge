@@ -134,7 +134,36 @@ else
 fi
 
 printf '==> Waiting for Job %s\n' "$APP_JOB_NAME"
-if ! kubectl -n "$APP_NAMESPACE" wait --for=condition=complete --timeout="$JOB_TIMEOUT" "job/$APP_JOB_NAME"; then
+kubectl -n "$APP_NAMESPACE" wait --for=condition=complete --timeout="$JOB_TIMEOUT" "job/$APP_JOB_NAME" >/dev/null 2>&1 &
+WAIT_COMPLETE_PID=$!
+kubectl -n "$APP_NAMESPACE" wait --for=condition=failed --timeout="$JOB_TIMEOUT" "job/$APP_JOB_NAME" >/dev/null 2>&1 &
+WAIT_FAILED_PID=$!
+
+JOB_RESULT="timeout"
+
+while :; do
+  if ! kill -0 "$WAIT_COMPLETE_PID" 2>/dev/null; then
+    if wait "$WAIT_COMPLETE_PID"; then
+      JOB_RESULT="complete"
+    fi
+    break
+  fi
+
+  if ! kill -0 "$WAIT_FAILED_PID" 2>/dev/null; then
+    if wait "$WAIT_FAILED_PID"; then
+      JOB_RESULT="failed"
+    fi
+    break
+  fi
+
+  sleep 2
+done
+
+kill "$WAIT_COMPLETE_PID" "$WAIT_FAILED_PID" 2>/dev/null || true
+wait "$WAIT_COMPLETE_PID" 2>/dev/null || true
+wait "$WAIT_FAILED_PID" 2>/dev/null || true
+
+if [ "$JOB_RESULT" != "complete" ]; then
   kubectl -n "$APP_NAMESPACE" logs "job/$APP_JOB_NAME" || true
   exit 1
 fi
