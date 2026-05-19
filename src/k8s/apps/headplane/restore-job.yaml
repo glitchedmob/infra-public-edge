@@ -1,0 +1,78 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: headplane-restore
+  namespace: headscale
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: restore
+          image: ghcr.io/k8up-io/k8up:v2.15.0
+          securityContext:
+            runAsUser: 0
+          command:
+            - /bin/bash
+            - -euo
+            - pipefail
+            - -c
+            - |
+              rm -rf /work/*
+
+              restore_args=(
+                --restore
+                --restoreType=folder
+                --restoreDir=/work
+                --restoreFilter=/headplane-backup.tar
+                --resticRepository="b2:${BACKUP_BUCKET}:${BACKUP_PATH}"
+              )
+
+              if [[ -n "${SNAPSHOT_ID}" ]]; then
+                restore_args+=(--restoreSnap="${SNAPSHOT_ID}")
+              fi
+
+              if [[ -n "${SNAPSHOT_DATE}" ]]; then
+                restore_args+=(--restoreTimeFilter="${SNAPSHOT_DATE}")
+              fi
+
+              k8up restic "${restore_args[@]}"
+
+              find /data -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+              tar -xf /work/headplane-backup.tar -C /data
+          env:
+            - name: BACKUP_BUCKET
+              value: levizitting-public-edge-backups
+            - name: BACKUP_PATH
+              value: headplane
+            - name: SNAPSHOT_ID
+              value: ""
+            - name: SNAPSHOT_DATE
+              value: ""
+            - name: RESTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: headplane-k8up-repo-password
+                  key: password
+            - name: B2_ACCOUNT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: k8up-b2-credentials
+                  key: account-id
+            - name: B2_ACCOUNT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: k8up-b2-credentials
+                  key: account-key
+          volumeMounts:
+            - name: work
+              mountPath: /work
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: work
+          emptyDir: {}
+        - name: data
+          persistentVolumeClaim:
+            claimName: headplane-data

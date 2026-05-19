@@ -46,3 +46,14 @@ make k9s
 - `make cluster-access` fetches `/etc/rancher/k3s/k3s.yaml`, writes it to `.local/kube/infra-public-edge.yaml`, and stages the upstream `derailed/k9s` Flux plugin in `.local/k9s/plugins/flux.yaml`.
 - The generated kubeconfig rewrites the API server endpoint to `https://x86-vps-node-01:6443` and sets `tls-server-name: x86-vps-node-01` so it works over Tailscale MagicDNS.
 - `make kubectl` and `make k9s` use the staged files in `.local/`; run `make cluster-access` once first and again when you want to refresh them.
+
+## Restore
+```bash
+make cluster-access
+make restore APP=headscale SNAPSHOT=162e7a85
+make restore APP=uptime-kuma DATE='2026-05-18'
+```
+
+- `make restore` suspends the single Flux `public-edge-apps` kustomization, scales the target deployment down, applies the app's manual restore Job, waits for completion, then scales the deployment back up and resumes Flux.
+- Set either `SNAPSHOT=<id>` or `DATE='<UTC prefix>'`. If neither is set, the latest snapshot is restored.
+- Manual GitHub Actions restores use the same `scripts/restore-app.sh` entrypoint as the local command.

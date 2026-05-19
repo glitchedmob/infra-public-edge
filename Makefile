@@ -1,6 +1,6 @@
 .PHONY: help tf-init tf-plan tf-show tf-output tf-apply tf-validate tf-format tf-lint-fix tf-providers-lock \
         ansible ansible-shell ansible-install ansible-inventory ansible-lint ansible-lint-fix \
-        cluster-access kubectl k9s
+        cluster-access kubectl k9s restore
 
 TF_DIR := src/tf
 ANSIBLE_DIR := src/ansible
@@ -36,6 +36,7 @@ help:
 	@echo "  Setup local access: make cluster-access"
 	@echo "  kubectl helper:    make kubectl ARGS='get nodes'"
 	@echo "  k9s helper:        make k9s"
+	@echo "  Restore helper:    make restore APP=headscale [SNAPSHOT=<id>|DATE='2026-05-18']"
 
 # --- OpenTofu ---
 
@@ -105,3 +106,8 @@ kubectl:
 
 k9s:
 	@KUBECONFIG="$(KUBECONFIG_PATH)" K9S_CONFIG_DIR="$(K9S_CONFIG_DIR)" k9s $(ARGS)
+
+restore:
+	@[ -n "$(APP)" ] || (echo "Error: APP required" && exit 1)
+	@if [ -n "$(SNAPSHOT)" ] && [ -n "$(DATE)" ]; then echo "Error: set only one of SNAPSHOT or DATE"; exit 1; fi
+	@KUBECONFIG="$(KUBECONFIG_PATH)" "$(CURDIR)/scripts/restore-app.sh" --app "$(APP)" $(if $(SNAPSHOT),--snapshot "$(SNAPSHOT)") $(if $(DATE),--date "$(DATE)")

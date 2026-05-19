@@ -1,0 +1,151 @@
+name: Restore k8s App Backup
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: App to restore
+        required: true
+        type: choice
+        options:
+          - headscale
+          - headplane
+          - uptime-kuma
+      snapshot:
+        description: Snapshot ID to restore
+        required: false
+        type: string
+      date:
+        description: UTC date prefix to restore, for example 2026-05-18
+        required: false
+        type: string
+      connectivity-mode:
+        description: How to reach the edge node
+        required: true
+        type: choice
+        options:
+          - tailscale
+          - public
+        default: tailscale
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate restore inputs
+        run: |
+          if [ -n "${{ inputs.snapshot }}" ] && [ -n "${{ inputs.date }}" ]; then
+            echo "Set only one of snapshot or date."
+            exit 1
+          fi
+
+      - name: Write .envrc
+        run: |
+          cat > .envrc <<'ENVEOF'
+          export TF_VAR_vultr_api_token="${{ secrets.TF_VAR_vultr_api_token }}"
+          export TF_VAR_cloudflare_api_token="${{ secrets.TF_VAR_cloudflare_api_token }}"
+          ENVEOF
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-2
+
+      - name: Connect Headscale
+        if: inputs.connectivity-mode == 'tailscale'
+        uses: tailscale/github-action@v4
+        with:
+          authkey: ${{ secrets.HEADSCALE_AUTH_KEY }}
+          args: --login-server=https://headscale.levizitting.com
+
+      - uses: opentofu/setup-opentofu@v2
+        with:
+          tofu_version_file: src/tf/.tofu-version
+
+      - name: Init Terraform
+        working-directory: src/tf
+        run: tofu init
+
+      - name: Read Terraform outputs
+        id: tf-outputs
+        working-directory: src/tf
+        run: |
+          vps_user=$(tofu output -raw ansible_user)
+          ssm_key_path=$(tofu output -raw ssm_private_key_path)
+          if [ "${{ inputs.connectivity-mode }}" = "public" ]; then
+            ssh_host=$(tofu output -raw vps_hostname)
+          else
+            ssh_host=$(tofu output -raw vps_tailscale_host)
+          fi
+          {
+            echo "ssh_host=$ssh_host"
+            echo "vps_user=$vps_user"
+            echo "ssm_key_path=$ssm_key_path"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Fetch SSH key from SSM
+        env:
+          SSM_KEY_PATH: ${{ steps.tf-outputs.outputs.ssm_key_path }}
+        run: |
+          key_path="$RUNNER_TEMP/ssh-key"
+          aws ssm get-parameter --with-decryption --name "$SSM_KEY_PATH" \
+            --query Parameter.Value --output text > "$key_path"
+          chmod 600 "$key_path"
+          echo "SSH_KEY_PATH=$key_path" >> "$GITHUB_ENV"
+
+      - name: Add host key
+        env:
+          VPS_HOST: ${{ steps.tf-outputs.outputs.ssh_host }}
+        run: |
+          known_hosts="$RUNNER_TEMP/known_hosts"
+          ssh-keyscan -t ed25519 "$VPS_HOST" >> "$known_hosts"
+          echo "KNOWN_HOSTS_PATH=$known_hosts" >> "$GITHUB_ENV"
+
+      - name: Fetch kubeconfig
+        env:
+          VPS_HOST: ${{ steps.tf-outputs.outputs.ssh_host }}
+          VPS_USER: ${{ steps.tf-outputs.outputs.vps_user }}
+        run: |
+          kubeconfig="$RUNNER_TEMP/kubeconfig"
+          ssh -i "$SSH_KEY_PATH" -o UserKnownHostsFile="$KNOWN_HOSTS_PATH" \
+            -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" "sudo cat /etc/rancher/k3s/k3s.yaml" > "$kubeconfig"
+          echo "KUBECONFIG=$kubeconfig" >> "$GITHUB_ENV"
+
+      - name: Start SSH tunnel
+        env:
+          VPS_HOST: ${{ steps.tf-outputs.outputs.ssh_host }}
+          VPS_USER: ${{ steps.tf-outputs.outputs.vps_user }}
+        run: |
+          ssh -i "$SSH_KEY_PATH" -o UserKnownHostsFile="$KNOWN_HOSTS_PATH" \
+            -o StrictHostKeyChecking=yes -o ExitOnForwardFailure=yes \
+            -N -L 6443:127.0.0.1:6443 "$VPS_USER@$VPS_HOST" &
+          echo "SSH_TUNNEL_PID=$!" >> "$GITHUB_ENV"
+          sleep 2
+
+      - uses: fluxcd/flux2/action@v2.8.3
+
+      - name: Run restore script
+        run: |
+          args=(--app "${{ inputs.app }}")
+          if [ -n "${{ inputs.snapshot }}" ]; then
+            args+=(--snapshot "${{ inputs.snapshot }}")
+          fi
+          if [ -n "${{ inputs.date }}" ]; then
+            args+=(--date "${{ inputs.date }}")
+          fi
+          ./scripts/restore-app.sh "${args[@]}"
+
+      - name: Stop SSH tunnel
+        if: always()
+        run: kill "$SSH_TUNNEL_PID" || true
+
+      - name: Cleanup
+        if: always()
+        run: rm -f "$SSH_KEY_PATH" "$KNOWN_HOSTS_PATH" || true
