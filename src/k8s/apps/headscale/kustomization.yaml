@@ -7,6 +7,9 @@ configMapGenerator:
   - name: headscale-config-template
     files:
       - config.yaml=config.yaml.tmpl
+  - name: headscale-extra-records
+    files:
+      - extra-records.json=extra-records.json
 resources:
   - namespace.yaml
   - pvc.yaml
