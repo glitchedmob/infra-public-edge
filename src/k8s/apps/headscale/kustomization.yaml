@@ -16,6 +16,7 @@ resources:
   - service.yaml
   - deployment.yaml
   - ingress.yaml
+  - middleware-https-redirect.yaml
   - k8up-schedule.yaml
   - prebackuppod.yaml
   - externalsecret-config.yaml

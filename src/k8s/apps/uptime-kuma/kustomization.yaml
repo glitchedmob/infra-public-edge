@@ -7,6 +7,7 @@ resources:
   - service.yaml
   - deployment.yaml
   - ingress.yaml
+  - middleware-https-redirect.yaml
   - k8up-schedule.yaml
   - prebackuppod.yaml
   - externalsecret-k8up-b2-credentials.yaml
