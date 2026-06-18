@@ -4,7 +4,7 @@ terraform {
   required_providers {
     vultr = {
       source  = "vultr/vultr"
-      version = "~> 2.29"
+      version = "~> 2.31"
     }
     aws = {
       source  = "hashicorp/aws"
@@ -16,11 +16,11 @@ terraform {
     }
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "~> 5.17"
+      version = "~> 5.19"
     }
     ansible = {
       source  = "ansible/ansible"
-      version = "~> 1.3"
+      version = "~> 1.4"
     }
     writeonly = {
       source  = "glitchedmob/writeonly"

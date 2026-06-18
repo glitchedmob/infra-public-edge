@@ -3,7 +3,7 @@
 
 provider "registry.opentofu.org/ansible/ansible" {
   version     = "1.4.0"
-  constraints = "~> 1.3"
+  constraints = "~> 1.4"
   hashes = [
     "h1:3BLWpuJUFvdjHr5qKDhzCCSfpMkYy/itbXgDWc3wkFA=",
     "h1:6C8Fo1tBd8GukVQqz9lCzETOb/zW6A2k3wCVlMjAp/E=",
@@ -54,7 +54,7 @@ provider "registry.opentofu.org/backblaze/b2" {
 
 provider "registry.opentofu.org/cloudflare/cloudflare" {
   version     = "5.19.1"
-  constraints = "~> 5.17"
+  constraints = "~> 5.19"
   hashes = [
     "h1:HkKPMZ/n+QiExkRUSLjGMTGnuIaph+k932LiTp7CKZM=",
     "h1:LicdZu3hugYpWuCAprg2EslbVP0zANnV9n9/2KiOnYc=",
@@ -221,7 +221,7 @@ provider "registry.opentofu.org/hashicorp/tls" {
 
 provider "registry.opentofu.org/vultr/vultr" {
   version     = "2.31.2"
-  constraints = "~> 2.29"
+  constraints = "~> 2.31"
   hashes = [
     "h1:0x7WhDKBzeGN1oOTZZZMG2lh7/d8y6I7OSK3l3iHkK8=",
     "h1:4ecQWFYaxs2WmQbs/5NGxZd1Wi9qwVLysQRclbsmAUE=",
