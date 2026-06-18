@@ -50,7 +50,7 @@ spec:
               k8s-app: kube-dns
       containers:
         - name: coredns
-          image: rancher/mirrored-coredns-coredns:1.14.2
+          image: rancher/mirrored-coredns-coredns:1.14.4
           imagePullPolicy: IfNotPresent
           args:
             - -conf
