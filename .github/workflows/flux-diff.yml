@@ -103,7 +103,7 @@ jobs:
           echo "SSH_TUNNEL_PID=$!" >> "$GITHUB_ENV"
           sleep 2
 
-      - uses: fluxcd/flux2/action@v2.8.3
+      - uses: fluxcd/flux2/action@v2.8.8
 
       - name: Run Flux diff
         run: |
