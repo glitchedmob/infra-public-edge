@@ -9,11 +9,7 @@ spec:
   routes:
     - match: HostSNIRegexp(`^([a-z0-9-]+\.)*levizitting\.com$`) && !HostSNI(`headscale.levizitting.com`) && !HostSNI(`uptime.levizitting.com`) && !HostSNI(`levizitting.com`)
       services:
-        - name: lz-k3s-01
+        - name: lz-k3s
           port: 443
-          weight: 1
-        - name: lz-k3s-02
-          port: 443
-          weight: 1
   tls:
     passthrough: true
