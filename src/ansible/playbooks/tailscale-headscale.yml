@@ -21,6 +21,23 @@
       ansible.builtin.set_fact:
         tailscale_authkey_value: "{{ lookup('amazon.aws.aws_ssm', ssm_tailscale_authkey_path) }}"
 
+    - name: Configure persistent virtual loopback IP for CoreDNS
+      ansible.builtin.blockinfile:
+        path: /etc/network/interfaces
+        marker: "# {mark} ANSIBLE MANAGED: loopback DNS IP"
+        block: |
+          auto lo:0
+          iface lo:0 inet static
+              address 10.255.255.1
+              netmask 255.255.255.255
+
+    - name: Bring up loopback alias
+      ansible.builtin.command:
+        cmd: ifup lo:0
+      register: _ifup
+      changed_when: false
+      failed_when: "_ifup.rc != 0 and 'ifup: interface lo:0 already configured' not in _ifup.stderr"
+
     - name: Install and configure Tailscale
       ansible.builtin.include_role:
         name: artis3n.tailscale.machine
@@ -30,6 +47,7 @@
           --login-server={{ tailscale_login_server }}
           --accept-routes
           --accept-dns=false
+          --advertise-routes=10.255.255.1/32
           --advertise-tags=tag:infra-public-edge
 
     - name: Write /etc/resolv.conf
