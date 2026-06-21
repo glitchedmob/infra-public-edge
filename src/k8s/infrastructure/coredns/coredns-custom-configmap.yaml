@@ -10,3 +10,20 @@ data:
       cache 30
       forward . 100.100.100.100
     }
+  levizitting.server: |
+    levizitting.com:53 {
+      errors
+      cache 30
+      hosts {
+        10.20.0.10 lz-k3s.levizitting.com lz-k3s-01.levizitting.com
+        10.20.0.11 lz-k3s.levizitting.com lz-k3s-02.levizitting.com
+        ttl 3600
+        fallthrough
+      }
+      template IN ANY argocd.levizitting.com {
+        answer "{{ .Name }} 3600 IN CNAME lz-k3s.levizitting.com."
+      }
+      forward . 2606:4700:4700::1111 2606:4700:4700::1001 1.1.1.1 1.0.0.1 {
+        policy sequential
+      }
+    }
