@@ -21,6 +21,7 @@ data:
         ttl 3600
         fallthrough
       }
+      loadbalance round_robin
       template IN ANY argocd.levizitting.com {
         answer "{{ .Name }} 3600 IN CNAME lz-k3s.levizitting.com."
       }
