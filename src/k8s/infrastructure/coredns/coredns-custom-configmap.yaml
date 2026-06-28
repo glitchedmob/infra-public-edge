@@ -31,6 +31,21 @@ data:
       template IN ANY grafana.levizitting.com {
         answer "{{ .Name }} 3600 IN CNAME lz-k3s.levizitting.com."
       }
+      template IN ANY sso.levizitting.com {
+        answer "{{ .Name }} 3600 IN CNAME lz-k3s.levizitting.com."
+      }
+      template IN ANY auth.levizitting.com {
+        answer "{{ .Name }} 3600 IN CNAME lz-k3s.levizitting.com."
+      }
+      template IN ANY longhorn.levizitting.com {
+        answer "{{ .Name }} 3600 IN CNAME lz-k3s.levizitting.com."
+      }
+      template IN ANY seaweedfs.levizitting.com {
+        answer "{{ .Name }} 3600 IN CNAME lz-k3s.levizitting.com."
+      }
+      template IN ANY traefik.levizitting.com {
+        answer "{{ .Name }} 3600 IN CNAME lz-k3s.levizitting.com."
+      }
       forward . 2606:4700:4700::1111 2606:4700:4700::1001 1.1.1.1 1.0.0.1 {
         policy sequential
       }
