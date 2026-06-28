@@ -17,6 +17,11 @@ Provisions and operates the LZ public edge platform, including the VPS and Kuber
 - HTTPS for forwarded zones uses TCP passthrough at the edge; TLS terminates on destination clusters.
 - Destination app ingresses are defined in [`glitchedmob/infra-k8s-apps`](https://github.com/glitchedmob/infra-k8s-apps) and [`sgfdevs/infra-k8s-apps`](https://github.com/sgfdevs/infra-k8s-apps).
 
+## DNS model
+- Two DNS paths exist for `*.levizitting.com`: **public** (Cloudflare, for internet clients) and **Tailscale split-DNS** (edge CoreDNS, for tailnet clients).
+- Public records are managed in [`glitchedmob/infra-dns`](https://github.com/glitchedmob/infra-dns); this repo only owns the edge node A/AAAA and `headscale` CNAME in `src/tf/domains.tf`.
+- Tailscale split-DNS is served by edge CoreDNS at `10.255.255.1` (reachable only over Tailscale). Records for that CoreDNS server are managed in `src/k8s/infrastructure/coredns/coredns-custom-configmap.yaml`.
+
 ## Run
 ```bash
 make help
