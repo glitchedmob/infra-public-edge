@@ -37,6 +37,9 @@ data:
       template IN ANY auth.levizitting.com {
         answer "{{ .Name }} 3600 IN CNAME lz-k3s.levizitting.com."
       }
+      template IN ANY headlamp.levizitting.com {
+        answer "{{ .Name }} 3600 IN CNAME lz-k3s.levizitting.com."
+      }
       template IN ANY longhorn.levizitting.com {
         answer "{{ .Name }} 3600 IN CNAME lz-k3s.levizitting.com."
       }
