@@ -8,7 +8,18 @@ data:
     headnet.levizitting.com:53 {
       errors
       cache 30
-      forward . 100.100.100.100
+      forward . 100.100.100.100 127.0.0.1:5300 {
+        policy sequential
+        failover SERVFAIL
+      }
+    }
+  nxdomainsink.server: |
+    .:5300 {
+      errors
+      template IN ANY . {
+        match ".*"
+        rcode NXDOMAIN
+      }
     }
   levizitting.server: |
     levizitting.com:53 {
