@@ -1,0 +1,47 @@
+apiVersion: external-secrets.io/v1
+kind: ClusterSecretStore
+metadata:
+  name: headscale-k8s
+spec:
+  provider:
+    kubernetes:
+      remoteNamespace: external-secrets
+      server:
+        caProvider:
+          type: ConfigMap
+          name: kube-root-ca.crt
+          key: ca.crt
+          namespace: external-secrets
+      auth:
+        token:
+          bearerToken:
+            name: eso-headscale-reader-token
+            namespace: external-secrets
+            key: token
+  conditions:
+    - namespaces:
+        - headscale
+---
+apiVersion: external-secrets.io/v1
+kind: ClusterSecretStore
+metadata:
+  name: uptime-kuma-k8s
+spec:
+  provider:
+    kubernetes:
+      remoteNamespace: external-secrets
+      server:
+        caProvider:
+          type: ConfigMap
+          name: kube-root-ca.crt
+          key: ca.crt
+          namespace: external-secrets
+      auth:
+        token:
+          bearerToken:
+            name: eso-uptime-kuma-reader-token
+            namespace: external-secrets
+            key: token
+  conditions:
+    - namespaces:
+        - uptime-kuma

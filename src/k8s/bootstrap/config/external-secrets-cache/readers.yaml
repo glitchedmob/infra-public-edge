@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: eso-headscale-reader
+  namespace: external-secrets
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: eso-headscale-reader
+  namespace: external-secrets
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["headscale-secrets"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: eso-headscale-reader
+  namespace: external-secrets
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: eso-headscale-reader
+subjects:
+  - kind: ServiceAccount
+    name: eso-headscale-reader
+    namespace: external-secrets
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: eso-headscale-reader-token
+  namespace: external-secrets
+  annotations:
+    kubernetes.io/service-account.name: eso-headscale-reader
+type: kubernetes.io/service-account-token
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: eso-uptime-kuma-reader
+  namespace: external-secrets
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: eso-uptime-kuma-reader
+  namespace: external-secrets
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["uptime-kuma-secrets"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: eso-uptime-kuma-reader
+  namespace: external-secrets
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: eso-uptime-kuma-reader
+subjects:
+  - kind: ServiceAccount
+    name: eso-uptime-kuma-reader
+    namespace: external-secrets
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: eso-uptime-kuma-reader-token
+  namespace: external-secrets
+  annotations:
+    kubernetes.io/service-account.name: eso-uptime-kuma-reader
+type: kubernetes.io/service-account-token

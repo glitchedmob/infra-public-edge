@@ -1,0 +1,33 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: ssm-cache
+  namespace: external-secrets
+  annotations:
+    external-secrets.io/force-sync: "1"
+spec:
+  refreshInterval: 24h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: aws-ssm
+  target:
+    name: ssm-cache
+  data:
+    - secretKey: cookieSecret
+      remoteRef:
+        key: /homelab/x86-vps-node-01/headplane-cookie-secret
+    - secretKey: b2AccountId
+      remoteRef:
+        key: /homelab/public-edge/backups/b2-account-id
+    - secretKey: b2AccountKey
+      remoteRef:
+        key: /homelab/public-edge/backups/b2-account-key
+    - secretKey: headscaleResticPassword
+      remoteRef:
+        key: /homelab/public-edge/backups/headscale/restic-password
+    - secretKey: headplaneResticPassword
+      remoteRef:
+        key: /homelab/public-edge/backups/headplane/restic-password
+    - secretKey: uptimeKumaResticPassword
+      remoteRef:
+        key: /homelab/public-edge/backups/uptime-kuma/restic-password
