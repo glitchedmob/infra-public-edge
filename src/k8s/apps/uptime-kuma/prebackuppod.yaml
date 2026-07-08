@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: backup
-          image: keinos/sqlite3:3.51.3
+          image: keinos/sqlite3:3.53.2
           command:
             - sh
             - -c
