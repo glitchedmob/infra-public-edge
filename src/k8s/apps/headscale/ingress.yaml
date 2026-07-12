@@ -4,7 +4,6 @@ metadata:
   name: headscale
   namespace: headscale
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
     traefik.ingress.kubernetes.io/router.middlewares: headscale-https-redirect@kubernetescrd
 spec:
   ingressClassName: traefik
@@ -20,6 +19,6 @@ spec:
                 port:
                   name: http
   tls:
-    - secretName: headscale-tls
+    - secretName: headscale-shared-tls
       hosts:
         - headscale.levizitting.com

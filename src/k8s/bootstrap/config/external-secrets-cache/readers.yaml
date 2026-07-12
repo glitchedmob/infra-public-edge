@@ -33,15 +33,6 @@ subjects:
     namespace: external-secrets
 ---
 apiVersion: v1
-kind: Secret
-metadata:
-  name: eso-headscale-reader-token
-  namespace: external-secrets
-  annotations:
-    kubernetes.io/service-account.name: eso-headscale-reader
-type: kubernetes.io/service-account-token
----
-apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: eso-uptime-kuma-reader
@@ -74,12 +65,3 @@ subjects:
   - kind: ServiceAccount
     name: eso-uptime-kuma-reader
     namespace: external-secrets
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: eso-uptime-kuma-reader-token
-  namespace: external-secrets
-  annotations:
-    kubernetes.io/service-account.name: eso-uptime-kuma-reader
-type: kubernetes.io/service-account-token
