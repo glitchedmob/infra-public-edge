@@ -15,6 +15,7 @@ resources:
   - pvc.yaml
   - service.yaml
   - deployment.yaml
+  - certificate.yaml
   - ingress.yaml
   - middleware-https-redirect.yaml
   - k8up-schedule.yaml

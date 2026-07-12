@@ -13,11 +13,9 @@ spec:
           key: ca.crt
           namespace: external-secrets
       auth:
-        token:
-          bearerToken:
-            name: eso-headscale-reader-token
-            namespace: external-secrets
-            key: token
+        serviceAccount:
+          name: eso-headscale-reader
+          namespace: external-secrets
   conditions:
     - namespaces:
         - headscale
@@ -37,11 +35,9 @@ spec:
           key: ca.crt
           namespace: external-secrets
       auth:
-        token:
-          bearerToken:
-            name: eso-uptime-kuma-reader-token
-            namespace: external-secrets
-            key: token
+        serviceAccount:
+          name: eso-uptime-kuma-reader
+          namespace: external-secrets
   conditions:
     - namespaces:
         - uptime-kuma

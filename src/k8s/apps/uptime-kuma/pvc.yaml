@@ -5,10 +5,12 @@ metadata:
   namespace: uptime-kuma
   annotations:
     k8up.io/backup: "false"
+    kustomize.toolkit.fluxcd.io/prune: disabled
+    kustomize.toolkit.fluxcd.io/ssa: IfNotPresent
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
       storage: 2Gi
-  storageClassName: "local-path"
+  storageClassName: local-path-retain
