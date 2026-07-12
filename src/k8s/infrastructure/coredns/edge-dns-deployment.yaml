@@ -7,8 +7,6 @@ metadata:
     app.kubernetes.io/name: edge-dns
 spec:
   replicas: 1
-  strategy:
-    type: Recreate
   selector:
     matchLabels:
       app.kubernetes.io/name: edge-dns
@@ -17,8 +15,6 @@ spec:
       labels:
         app.kubernetes.io/name: edge-dns
     spec:
-      hostNetwork: true
-      dnsPolicy: Default
       priorityClassName: system-cluster-critical
       containers:
         - name: coredns
@@ -35,10 +31,10 @@ spec:
               containerPort: 53
               protocol: TCP
             - name: health
-              containerPort: 18080
+              containerPort: 8080
               protocol: TCP
             - name: ready
-              containerPort: 18181
+              containerPort: 8181
               protocol: TCP
           livenessProbe:
             httpGet:
