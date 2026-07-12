@@ -27,28 +27,15 @@ spec:
           args:
             - -conf
             - /etc/coredns/Corefile
-          ports:
-            - name: dns
-              containerPort: 53
-              protocol: UDP
-            - name: dns-tcp
-              containerPort: 53
-              protocol: TCP
-            - name: health
-              containerPort: 8080
-              protocol: TCP
-            - name: ready
-              containerPort: 8181
-              protocol: TCP
           livenessProbe:
             httpGet:
               path: /health
-              port: health
+              port: 8080
             initialDelaySeconds: 10
           readinessProbe:
             httpGet:
               path: /ready
-              port: ready
+              port: 8181
           resources:
             requests:
               cpu: 50m
