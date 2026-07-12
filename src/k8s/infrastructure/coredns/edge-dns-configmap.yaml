@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: edge-dns
+  namespace: kube-system
+data:
+  Corefile: |
+    headnet.levizitting.com:53 {
+      errors
+      cache 30
+      forward . 100.100.100.100 127.0.0.1:5300 {
+        policy sequential
+        failover SERVFAIL
+      }
+    }
+    .:5300 {
+      errors
+      template IN ANY . {
+        match ".*"
+        rcode NXDOMAIN
+      }
+    }
+    levizitting.com:53 {
+      errors
+      health :8080
+      ready :8181
+      cache 30
+      hosts {
+        10.20.0.10 lz-k3s.levizitting.com lz-k3s-01.levizitting.com
+        10.20.0.11 lz-k3s.levizitting.com lz-k3s-02.levizitting.com
+        10.20.0.12 lz-k3s.levizitting.com lz-k3s-03.levizitting.com
+        ttl 3600
+        fallthrough
+      }
+      loadbalance round_robin
+      template IN ANY argocd.levizitting.com {
+        answer "{{ .Name }} 3600 IN CNAME lz-k3s.levizitting.com."
+      }
+      template IN ANY secrets.levizitting.com {
+        answer "{{ .Name }} 3600 IN CNAME lz-k3s.levizitting.com."
+      }
+      template IN ANY grafana.levizitting.com {
+        answer "{{ .Name }} 3600 IN CNAME lz-k3s.levizitting.com."
+      }
+      template IN ANY sso.levizitting.com {
+        answer "{{ .Name }} 3600 IN CNAME lz-k3s.levizitting.com."
+      }
+      template IN ANY auth.levizitting.com {
+        answer "{{ .Name }} 3600 IN CNAME lz-k3s.levizitting.com."
+      }
+      template IN ANY headlamp.levizitting.com {
+        answer "{{ .Name }} 3600 IN CNAME lz-k3s.levizitting.com."
+      }
+      template IN ANY longhorn.levizitting.com {
+        answer "{{ .Name }} 3600 IN CNAME lz-k3s.levizitting.com."
+      }
+      template IN ANY seaweedfs.levizitting.com {
+        answer "{{ .Name }} 3600 IN CNAME lz-k3s.levizitting.com."
+      }
+      template IN ANY traefik.levizitting.com {
+        answer "{{ .Name }} 3600 IN CNAME lz-k3s.levizitting.com."
+      }
+      forward . 2606:4700:4700::1111 2606:4700:4700::1001 1.1.1.1 1.0.0.1 {
+        policy sequential
+      }
+    }
