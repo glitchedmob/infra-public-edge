@@ -22,8 +22,8 @@ data:
     }
     levizitting.com:53 {
       errors
-      health :8080
-      ready :8181
+      health :18080
+      ready :18181
       cache 30
       hosts {
         10.20.0.10 lz-k3s.levizitting.com lz-k3s-01.levizitting.com
