@@ -1,17 +1,11 @@
 apiVersion: k8up.io/v1
 kind: PreBackupPod
 metadata:
-  name: headplane-backup
-  namespace: headscale
+  name: app-backup
   labels:
-    backup.k8up.io/app: headplane
+    backup.k8up.io/app: app
 spec:
-  backupCommand: >-
-    sh -c '
-      mkdir -p /tmp/backup &&
-      sqlite3 /data/hp_persist.db ".backup /tmp/backup/hp_persist.db" &&
-      tar -cf - -C /tmp/backup .
-    '
+  backupCommand: sh -c 'exit 1'
   fileExtension: .tar
   pod:
     spec:
@@ -28,6 +22,6 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: headplane-data
+            claimName: app-data
       securityContext:
         runAsUser: 0

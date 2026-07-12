@@ -8,12 +8,20 @@ configMapGenerator:
     files:
       - config.yaml=config.yaml.tmpl
 resources:
+  - ../backup-base
   - pvc.yaml
   - service.yaml
   - deployment.yaml
   - ingress.yaml
-  - k8up-schedule.yaml
-  - prebackuppod.yaml
   - externalsecret.yaml
   - externalsecret-config.yaml
   - externalsecret-k8up-repo-password.yaml
+patches:
+  - path: backup-patch.yaml
+    target:
+      kind: PreBackupPod
+      name: app-backup
+  - path: schedule-patch.yaml
+    target:
+      kind: Schedule
+      name: app-backup

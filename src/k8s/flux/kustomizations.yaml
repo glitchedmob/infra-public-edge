@@ -52,7 +52,56 @@ metadata:
 spec:
   interval: 5m
   path: ./src/k8s/apps
-  prune: true
+  deletionPolicy: Orphan
+  prune: false
+  wait: true
+  dependsOn:
+    - name: public-edge-infrastructure
+  sourceRef:
+    kind: GitRepository
+    name: infra
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: public-edge-edge-routing
+  namespace: flux-system
+spec:
+  interval: 5m
+  path: ./src/k8s/apps/edge-routing
+  prune: false
+  wait: true
+  dependsOn:
+    - name: public-edge-infrastructure
+  sourceRef:
+    kind: GitRepository
+    name: infra
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: public-edge-headscale-stack
+  namespace: flux-system
+spec:
+  interval: 5m
+  path: ./src/k8s/apps/headscale-stack
+  prune: false
+  wait: true
+  dependsOn:
+    - name: public-edge-infrastructure
+  sourceRef:
+    kind: GitRepository
+    name: infra
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: public-edge-uptime-kuma
+  namespace: flux-system
+spec:
+  interval: 5m
+  path: ./src/k8s/apps/uptime-kuma
+  prune: false
   wait: true
   dependsOn:
     - name: public-edge-infrastructure

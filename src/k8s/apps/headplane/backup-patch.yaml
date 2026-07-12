@@ -1,0 +1,17 @@
+- op: replace
+  path: /metadata/name
+  value: headplane-backup
+- op: replace
+  path: /metadata/labels/backup.k8up.io~1app
+  value: headplane
+- op: replace
+  path: /spec/backupCommand
+  value: >-
+    sh -c '
+      mkdir -p /tmp/backup &&
+      sqlite3 /data/hp_persist.db ".backup /tmp/backup/hp_persist.db" &&
+      tar -cf - -C /tmp/backup .
+    '
+- op: replace
+  path: /spec/pod/spec/volumes/0/persistentVolumeClaim/claimName
+  value: headplane-data

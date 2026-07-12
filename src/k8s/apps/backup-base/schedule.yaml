@@ -1,16 +1,15 @@
 apiVersion: k8up.io/v1
 kind: Schedule
 metadata:
-  name: headplane-backup
-  namespace: headscale
+  name: app-backup
 spec:
   backend:
     repoPasswordSecretRef:
-      name: headplane-k8up-repo-password
+      name: app-k8up-repo-password
       key: password
     b2:
       bucket: levizitting-public-edge-backups
-      path: headplane
+      path: app
       accountIDSecretRef:
         name: k8up-b2-credentials
         key: account-id
@@ -23,7 +22,7 @@ spec:
     successfulJobsHistoryLimit: 2
     labelSelectors:
       - matchLabels:
-          backup.k8up.io/app: headplane
+          backup.k8up.io/app: app
   check:
     schedule: '0 9 * * 1'
   prune:

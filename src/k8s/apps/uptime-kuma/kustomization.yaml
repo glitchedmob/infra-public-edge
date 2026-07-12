@@ -2,13 +2,21 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: uptime-kuma
 resources:
+  - ../backup-base
   - namespace.yaml
   - pvc.yaml
   - service.yaml
   - deployment.yaml
   - ingress.yaml
   - middleware-https-redirect.yaml
-  - k8up-schedule.yaml
-  - prebackuppod.yaml
   - externalsecret-k8up-b2-credentials.yaml
   - externalsecret-k8up-repo-password.yaml
+patches:
+  - path: backup-patch.yaml
+    target:
+      kind: PreBackupPod
+      name: app-backup
+  - path: schedule-patch.yaml
+    target:
+      kind: Schedule
+      name: app-backup

@@ -11,6 +11,7 @@ configMapGenerator:
     files:
       - extra-records.json=extra-records.json
 resources:
+  - ../backup-base
   - namespace.yaml
   - pvc.yaml
   - service.yaml
@@ -18,9 +19,16 @@ resources:
   - certificate.yaml
   - ingress.yaml
   - middleware-https-redirect.yaml
-  - k8up-schedule.yaml
-  - prebackuppod.yaml
   - externalsecret-config.yaml
   - externalsecret-k8up-b2-credentials.yaml
   - externalsecret-k8up-repo-password.yaml
   - eso-k8s-store.yaml
+patches:
+  - path: backup-patch.yaml
+    target:
+      kind: PreBackupPod
+      name: app-backup
+  - path: schedule-patch.yaml
+    target:
+      kind: Schedule
+      name: app-backup
