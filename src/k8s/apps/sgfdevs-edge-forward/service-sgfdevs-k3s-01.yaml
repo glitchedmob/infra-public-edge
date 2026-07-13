@@ -5,7 +5,7 @@ metadata:
   namespace: edge-routing
 spec:
   type: ExternalName
-  externalName: sgfdevs-k3s-01.headnet.levizitting.com
+  externalName: sgfdevs-k3s-01.levizitting.com
   ports:
     - name: http
       port: 80
