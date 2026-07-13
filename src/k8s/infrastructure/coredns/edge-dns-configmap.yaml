@@ -8,6 +8,13 @@ data:
     headnet.levizitting.com:53 {
       errors
       cache 30
+      hosts {
+        10.20.4.10 sgfdevs-k3s-01.headnet.levizitting.com
+        10.20.4.11 sgfdevs-k3s-02.headnet.levizitting.com
+        10.20.4.12 sgfdevs-k3s-03.headnet.levizitting.com
+        ttl 3600
+        fallthrough
+      }
       forward . 100.100.100.100 127.0.0.1:5300 {
         policy sequential
         failover SERVFAIL
