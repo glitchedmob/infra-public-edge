@@ -15,6 +15,7 @@ data:
     }
     .:5300 {
       errors
+      reload
       template IN ANY . {
         match ".*"
         rcode NXDOMAIN
