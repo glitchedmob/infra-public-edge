@@ -15,6 +15,11 @@
     "value": "10.20.4.11"
   },
   {
+    "name": "sgfdevs-k3s-03.headnet.levizitting.com",
+    "type": "A",
+    "value": "10.20.4.12"
+  },
+  {
     "name": "switch.headnet.levizitting.com",
     "type": "A",
     "value": "10.0.0.2"
