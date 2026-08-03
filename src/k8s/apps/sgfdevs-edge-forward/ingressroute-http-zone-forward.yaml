@@ -8,7 +8,13 @@ spec:
     - web
   routes:
     - kind: Rule
-      match: Host(`sgf.dev`) || HostRegexp(`^([a-z0-9-]+\.)*sgf\.dev$`)
+      match: >-
+        Host(`sgf.dev`) ||
+        HostRegexp(`^([a-z0-9-]+\.)*sgf\.dev$`) ||
+        Host(`methodconf.com`) ||
+        HostRegexp(`^([a-z0-9-]+\.)*methodconf\.com$`) ||
+        Host(`hack4goodsgf.com`) ||
+        HostRegexp(`^([a-z0-9-]+\.)*hack4goodsgf\.com$`)
       services:
         - name: sgfdevs-k3s
           port: 80
