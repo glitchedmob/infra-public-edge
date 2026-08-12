@@ -1,8 +1,7 @@
 name: Flux Diff
 
 on:
-  pull_request:
-    paths: [src/k8s/**]
+  workflow_call:
 
 # To switch to public SSH connectivity, change EDGE_CONNECTION_MODE to 'public'.
 env:
