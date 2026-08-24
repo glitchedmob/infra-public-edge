@@ -49,6 +49,9 @@ data:
       template IN ANY sso.levizitting.com {
         answer "{{ .Name }} 3600 IN CNAME lz-k3s.levizitting.com."
       }
+      template IN ANY workflows.levizitting.com {
+        answer "{{ .Name }} 3600 IN CNAME lz-k3s.levizitting.com."
+      }
       template IN ANY auth.levizitting.com {
         answer "{{ .Name }} 3600 IN CNAME lz-k3s.levizitting.com."
       }
