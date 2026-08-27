@@ -1,4 +1,16 @@
 apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: oidc-discovery-proxy
+rules:
+  - nonResourceURLs:
+      - /.well-known/openid-configuration
+      - /openid/v1/jwks
+    verbs:
+      - get
+      - head
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: oidc-discovery-proxy
@@ -9,4 +21,4 @@ subjects:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: system:service-account-issuer-discovery
+  name: oidc-discovery-proxy
