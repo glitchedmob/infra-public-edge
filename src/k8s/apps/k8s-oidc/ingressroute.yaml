@@ -11,7 +11,7 @@ spec:
       match: >-
         Host(`k8s-oidc-edge.levizitting.com`) &&
         (Path(`/.well-known/openid-configuration`) || Path(`/openid/v1/jwks`)) &&
-        (Method(`GET`) || Method(`HEAD`))
+        Method(`GET`)
       middlewares:
         - name: oidc-discovery-strip-authorization
         - name: oidc-discovery-rate-limit

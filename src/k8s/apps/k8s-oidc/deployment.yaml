@@ -30,7 +30,7 @@ spec:
             - --port=8001
             - --accept-hosts=^k8s-oidc-edge\.levizitting\.com$
             - --accept-paths=^/(\.well-known/openid-configuration|openid/v1/jwks)$
-            - --reject-methods=^(POST|PUT|PATCH|DELETE|CONNECT|OPTIONS|TRACE)$
+            - --reject-methods=^(HEAD|POST|PUT|PATCH|DELETE|CONNECT|OPTIONS|TRACE)$
           ports:
             - name: http
               containerPort: 8001
