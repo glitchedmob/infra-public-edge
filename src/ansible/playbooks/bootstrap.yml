@@ -6,6 +6,11 @@
     k3s_version: v1.36.3+k3s1
     server_group: all
     api_endpoint: localhost
+    server_config_yaml: |
+      kube-apiserver-arg:
+        - service-account-issuer=https://k8s-oidc-edge.levizitting.com
+        - service-account-issuer=https://kubernetes.default.svc.cluster.local
+        - service-account-jwks-uri=https://k8s-oidc-edge.levizitting.com/openid/v1/jwks
   roles:
     - k3s.orchestration.prereq
     - k3s.orchestration.k3s_server
