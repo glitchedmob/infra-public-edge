@@ -8,15 +8,13 @@ locals {
     { protocol = "udp", port = "3478", ip_types = ["v4", "v6"], notes = "Allow DERP" },
     { protocol = "tcp", port = "3478", ip_types = ["v4", "v6"], notes = "Allow DERP" },
   ]
-  user                            = "admin"
-  ipv6_normalized                 = cidrhost("${vultr_instance.this.v6_main_ip}/128", 0)
-  dns_record_comment              = "managedBy=tf,repo=glitchedmob/infra-public-edge"
-  headscale_hostname              = "headscale"
-  hostname                        = "x86-vps-node-01"
-  vps_fqdn                        = "${local.hostname}.${data.cloudflare_zone.levizitting_com.name}"
-  flux_access_key_id_ssm_path     = "/homelab/${local.hostname}/flux-ssm-access-key-id"
-  flux_secret_access_key_ssm_path = "/homelab/${local.hostname}/flux-ssm-secret-access-key"
-  github_status_token_ssm_path    = "/homelab/${local.hostname}/flux-github-status-token"
+  user                         = "admin"
+  ipv6_normalized              = cidrhost("${vultr_instance.this.v6_main_ip}/128", 0)
+  dns_record_comment           = "managedBy=tf,repo=glitchedmob/infra-public-edge"
+  headscale_hostname           = "headscale"
+  hostname                     = "x86-vps-node-01"
+  vps_fqdn                     = "${local.hostname}.${data.cloudflare_zone.levizitting_com.name}"
+  github_status_token_ssm_path = "/homelab/${local.hostname}/flux-github-status-token"
 
 }
 
@@ -105,20 +103,18 @@ resource "vultr_instance" "this" {
 resource "ansible_host" "this" {
   name = local.hostname
   variables = {
-    ansible_user                    = local.user
-    public_ssh_host                 = vultr_instance.this.main_ip
-    tailscale_ssh_host              = local.hostname
-    public_ipv4                     = vultr_instance.this.main_ip
-    public_ipv6                     = vultr_instance.this.v6_main_ip
-    ssm_private_key_path            = module.ssh_key.ssm_path
-    ssm_cookie_secret_path          = aws_ssm_parameter.cookie_secret.name
-    ssm_flux_access_key_id_path     = local.flux_access_key_id_ssm_path
-    ssm_flux_secret_access_key_path = local.flux_secret_access_key_ssm_path
-    ssm_flux_git_private_key_path   = module.flux_deploy_key.ssm_path
-    ssm_github_status_token_path    = aws_ssm_parameter.github_status_token.name
-    domain                          = data.cloudflare_zone.levizitting_com.name
-    headscale_hostname              = "${local.headscale_hostname}.${data.cloudflare_zone.levizitting_com.name}"
-    tailscale_login_server          = "https://${local.headscale_hostname}.${data.cloudflare_zone.levizitting_com.name}"
-    ssm_tailscale_authkey_path      = "/homelab/headscale/infra-public-edge/${local.hostname}-auth-key"
+    ansible_user                  = local.user
+    public_ssh_host               = vultr_instance.this.main_ip
+    tailscale_ssh_host            = local.hostname
+    public_ipv4                   = vultr_instance.this.main_ip
+    public_ipv6                   = vultr_instance.this.v6_main_ip
+    ssm_private_key_path          = module.ssh_key.ssm_path
+    ssm_cookie_secret_path        = aws_ssm_parameter.cookie_secret.name
+    ssm_flux_git_private_key_path = module.flux_deploy_key.ssm_path
+    ssm_github_status_token_path  = aws_ssm_parameter.github_status_token.name
+    domain                        = data.cloudflare_zone.levizitting_com.name
+    headscale_hostname            = "${local.headscale_hostname}.${data.cloudflare_zone.levizitting_com.name}"
+    tailscale_login_server        = "https://${local.headscale_hostname}.${data.cloudflare_zone.levizitting_com.name}"
+    ssm_tailscale_authkey_path    = "/homelab/headscale/infra-public-edge/${local.hostname}-auth-key"
   }
 }
