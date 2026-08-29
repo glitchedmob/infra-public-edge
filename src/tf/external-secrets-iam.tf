@@ -8,10 +8,6 @@ locals {
     "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/homelab/${local.hostname}/*",
     "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/homelab/public-edge/*",
   ]
-  external_secrets_legacy_credential_arns = [
-    "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${local.flux_access_key_id_ssm_path}",
-    "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter${local.flux_secret_access_key_ssm_path}",
-  ]
 }
 
 resource "aws_iam_role" "external_secrets" {
@@ -53,16 +49,6 @@ resource "aws_iam_role_policy" "external_secrets" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
-      {
-        Sid    = "DenyLegacyCredentials"
-        Effect = "Deny"
-        Action = [
-          "ssm:GetParameter",
-          "ssm:GetParameters",
-          "ssm:GetParametersByPath",
-        ]
-        Resource = local.external_secrets_legacy_credential_arns
-      },
       {
         Sid    = "ReadPublicEdgeParameters"
         Effect = "Allow"
