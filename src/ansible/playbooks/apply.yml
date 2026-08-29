@@ -11,8 +11,6 @@
 
     - name: Fetch Flux SSM values
       ansible.builtin.set_fact:
-        flux_access_key_id: "{{ lookup('amazon.aws.aws_ssm', ssm_flux_access_key_id_path) if ssm_flux_access_key_id_path is defined else omit }}"
-        flux_secret_access_key: "{{ lookup('amazon.aws.aws_ssm', ssm_flux_secret_access_key_path) if ssm_flux_secret_access_key_path is defined else omit }}"
         flux_git_private_key: "{{ lookup('amazon.aws.aws_ssm', ssm_flux_git_private_key_path) if ssm_flux_git_private_key_path is defined else omit }}"
         flux_github_status_token: "{{ lookup('amazon.aws.aws_ssm', ssm_github_status_token_path) if ssm_github_status_token_path is defined else omit }}"
 
@@ -35,7 +33,6 @@
         flux_git_auth_manifest: "{{ lookup('template', playbook_dir ~ '/manifests/flux-git-auth-secret.yaml.j2') }}"
         github_status_token_manifest: "{{ lookup('template', playbook_dir ~ '/manifests/github-status-token-secret.yaml.j2') }}"
         github_notifications_manifest: "{{ lookup('file', playbook_dir ~ '/manifests/github-notifications.yaml') }}"
-        external_secrets_creds_manifest: "{{ lookup('template', playbook_dir ~ '/manifests/external-secrets-aws-creds.yaml.j2') }}"
         headscale_runtime_manifest: "{{ lookup('template', playbook_dir ~ '/manifests/headscale-runtime-secret.yaml.j2') }}"
         headplane_runtime_manifest: "{{ lookup('template', playbook_dir ~ '/manifests/headplane-runtime-secret.yaml.j2') }}"
         aws_runtime_configmap_manifest: "{{ lookup('template', playbook_dir ~ '/manifests/aws-runtime-configmap.yaml.j2') }}"
@@ -61,8 +58,6 @@
           manifest: "{{ github_status_token_manifest }}"
         - name: github notifications
           manifest: "{{ github_notifications_manifest }}"
-        - name: external-secrets aws creds
-          manifest: "{{ external_secrets_creds_manifest }}"
         - name: headscale runtime secret
           manifest: "{{ headscale_runtime_manifest }}"
         - name: headplane runtime secret
