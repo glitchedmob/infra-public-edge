@@ -50,4 +50,7 @@ output "backup_restic_password_ssm_paths" {
   }
 }
 
-
+output "external_secrets_role_arn" {
+  description = "IAM role ARN for the External Secrets controller"
+  value       = aws_iam_role.external_secrets.arn
+}
