@@ -3,6 +3,12 @@
   hosts: x86-vps-node-01
   become: true
   tasks:
+    - name: Fetch AWS caller identity
+      amazon.aws.aws_caller_info:
+      register: aws_caller_info
+      delegate_to: localhost
+      become: false
+
     - name: Fetch Flux SSM values
       ansible.builtin.set_fact:
         flux_access_key_id: "{{ lookup('amazon.aws.aws_ssm', ssm_flux_access_key_id_path) if ssm_flux_access_key_id_path is defined else omit }}"
@@ -32,6 +38,7 @@
         external_secrets_creds_manifest: "{{ lookup('template', playbook_dir ~ '/manifests/external-secrets-aws-creds.yaml.j2') }}"
         headscale_runtime_manifest: "{{ lookup('template', playbook_dir ~ '/manifests/headscale-runtime-secret.yaml.j2') }}"
         headplane_runtime_manifest: "{{ lookup('template', playbook_dir ~ '/manifests/headplane-runtime-secret.yaml.j2') }}"
+        aws_runtime_configmap_manifest: "{{ lookup('template', playbook_dir ~ '/manifests/aws-runtime-configmap.yaml.j2') }}"
 
     - name: Apply Kubernetes manifests
       ansible.builtin.command: kubectl apply -f -
@@ -44,6 +51,8 @@
       loop:
         - name: namespaces
           manifest: "{{ namespaces_manifest }}"
+        - name: aws runtime configmap
+          manifest: "{{ aws_runtime_configmap_manifest }}"
         - name: flux install
           manifest: "{{ flux_install_manifest }}"
         - name: flux git auth secret
