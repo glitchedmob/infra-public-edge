@@ -56,7 +56,7 @@ tf-apply:
 	@source .envrc 2>/dev/null || true && cd $(TF_DIR) && tofu apply $(ARGS)
 
 tf-validate:
-	@source .envrc 2>/dev/null || true && cd $(TF_DIR) && tofu validate
+	@cd $(TF_DIR) && tofu validate
 
 tf-format:
 	@cd $(TF_DIR) && tofu fmt -check -recursive
