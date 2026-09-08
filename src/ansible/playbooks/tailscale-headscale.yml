@@ -47,6 +47,7 @@
           --login-server={{ tailscale_login_server }}
           --accept-routes
           --accept-dns=false
+          --advertise-exit-node
           --advertise-routes=10.255.255.1/32
           --advertise-tags=tag:infra-public-edge
 
