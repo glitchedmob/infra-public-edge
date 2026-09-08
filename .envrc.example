@@ -1,5 +1,19 @@
 export AWS_DEFAULT_PROFILE="your-aws-profile-name"
-export TF_VAR_vultr_api_token="your-vultr-api-token"
-export TF_VAR_cloudflare_api_token="your-cloudflare-api-token"
-export TF_VAR_b2_application_key_id="keyid"
-export TF_VAR_b2_application_key="key"
+
+ssm_values="$(
+  aws --profile "$AWS_DEFAULT_PROFILE" ssm get-parameters \
+    --names \
+      "/infra/lz/infra-public-edge/TF_VAR_cloudflare_api_token" \
+      "/infra/lz/infra-public-edge/TF_VAR_vultr_api_token" \
+      "/infra/lz/infra-public-edge/TF_VAR_b2_application_key_id" \
+      "/infra/lz/infra-public-edge/TF_VAR_b2_application_key" \
+    --with-decryption --output json --no-cli-pager |
+    jq '.Parameters | map({key: (.Name | split("/") | last), value: .Value}) | from_entries'
+)"
+
+export TF_VAR_cloudflare_api_token="$(jq -r '.TF_VAR_cloudflare_api_token' <<< "$ssm_values")"
+export TF_VAR_vultr_api_token="$(jq -r '.TF_VAR_vultr_api_token' <<< "$ssm_values")"
+export TF_VAR_b2_application_key_id="$(jq -r '.TF_VAR_b2_application_key_id' <<< "$ssm_values")"
+export TF_VAR_b2_application_key="$(jq -r '.TF_VAR_b2_application_key' <<< "$ssm_values")"
+
+unset ssm_values
