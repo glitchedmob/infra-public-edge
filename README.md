@@ -21,8 +21,6 @@ Provisions and operates the LZ public edge platform, including the VPS and Kuber
 - Two DNS paths exist for `*.levizitting.com`: **public** (Cloudflare, for internet clients) and **Tailscale split-DNS** (edge CoreDNS, for tailnet clients).
 - Public records are managed in [`glitchedmob/infra-dns`](https://github.com/glitchedmob/infra-dns); this repo only owns the edge node A/AAAA and `headscale` CNAME in `src/tf/domains.tf`.
 - Tailscale split-DNS is served by edge CoreDNS at `10.255.255.1` (reachable only over Tailscale). Records for that CoreDNS server are managed in `src/k8s/infrastructure/coredns/coredns-custom-configmap.yaml`.
-- `headscale.levizitting.com` and its CNAME target `x86-vps-node-01.levizitting.com` use more-specific split-DNS entries pointing to public resolvers. These bootstrap names must resolve without a working tailnet so clients can reach the control server and embedded DERP relay.
-- The embedded DERP relay uses region `999`, in Tailscale's user-reserved range. Keep its region ID positive and distinct from the public DERP regions; region `0` is not valid.
 
 ## Run
 ```bash
