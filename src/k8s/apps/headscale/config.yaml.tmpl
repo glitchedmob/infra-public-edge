@@ -23,6 +23,10 @@ prefixes:
 derp:
   server:
     enabled: true
+    # Region 0 means no DERP region to Tailscale clients.
+    region_id: 999
+    region_code: headscale
+    region_name: Headscale
     stun_listen_addr: "0.0.0.0:3478"
     private_key_path: /var/lib/headscale/derp_server_private.key
     ipv4: "{{ .HEADSCALE_DERP_IPV4 }}"
@@ -39,6 +43,13 @@ dns:
       - 1.1.1.1
       - 1.0.0.1
     split:
+      # Resolve the control/DERP server and its CNAME target without the tailnet.
+      headscale.levizitting.com:
+        - 1.1.1.1
+        - 1.0.0.1
+      x86-vps-node-01.levizitting.com:
+        - 1.1.1.1
+        - 1.0.0.1
       levizitting.com:
         - 10.255.255.1
   override_local_dns: false
