@@ -4,12 +4,10 @@ services:
       file: ../backup/compose.yaml
       service: backup
     user: "10001:10001"
-    environment:
-      BACKUP_APP: headscale
     volumes:
       - type: bind
         source: .
-        target: /etc/backup
+        target: /resticprofile
         read_only: true
         bind:
           create_host_path: false

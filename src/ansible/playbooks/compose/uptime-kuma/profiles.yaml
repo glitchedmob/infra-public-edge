@@ -1,0 +1,20 @@
+version: "1"
+includes: [/etc/backup-common/profiles.yaml]
+
+default:
+  inherit: base
+  backup:
+    host: uptime-kuma
+    stdin-filename: uptime-kuma-backup.tar
+    schedule: "*-*-* 08:40:00"
+    run-before:
+      - mkdir -m 700 /scratch/snapshot
+      - sqlite3 -readonly -bail /source/kuma.db '.timeout 10000' '.backup /scratch/snapshot/kuma.db'
+      - sqlite3 -bail /scratch/snapshot/kuma.db 'PRAGMA journal_mode=DELETE;'
+      - test "$(sqlite3 -readonly /scratch/snapshot/kuma.db 'PRAGMA integrity_check;')" = ok
+      - find /source -mindepth 1 -maxdepth 1 ! -name 'kuma.db*' -exec cp -a -t /scratch/snapshot {} +
+  check:
+    schedule: "Mon *-*-* 09:40:00"
+  forget:
+    host: uptime-kuma
+    schedule: "Sun *-*-* 10:40:00"

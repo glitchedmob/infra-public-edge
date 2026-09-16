@@ -1,0 +1,21 @@
+version: "1"
+includes: [/etc/backup-common/profiles.yaml]
+
+default:
+  inherit: base
+  backup:
+    host: headscale
+    stdin-filename: headscale-backup.tar
+    schedule: "*-*-* 08:00:00"
+    run-before:
+      - mkdir -m 700 /scratch/snapshot
+      - sqlite3 -readonly -bail /source/db.sqlite '.timeout 10000' '.backup /scratch/snapshot/db.sqlite'
+      - sqlite3 -bail /scratch/snapshot/db.sqlite 'PRAGMA journal_mode=DELETE;'
+      - test "$(sqlite3 -readonly /scratch/snapshot/db.sqlite 'PRAGMA integrity_check;')" = ok
+      - cp /source/noise_private.key /source/derp_server_private.key /scratch/snapshot/
+      - find /source -maxdepth 1 -name private.key -exec cp -t /scratch/snapshot {} +
+  check:
+    schedule: "Mon *-*-* 09:00:00"
+  forget:
+    host: headscale
+    schedule: "Sun *-*-* 10:00:00"

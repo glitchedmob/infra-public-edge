@@ -1,7 +1,16 @@
 services:
   backup:
-    image: ghcr.io/glitchedmob/restic-backup:1.0.1
-    command: [/bin/sh, /etc/backup-common/run.sh, schedule]
+    image: ghcr.io/glitchedmob/restic-backup:1.0.0@sha256:a53715a1371eb1d732945d08c06ce14842a6ef3e6e966905c4f45a5f9c32f885
+    # One scheduler or one-off container owns the workspace at a time.
+    entrypoint: [flock, -n, /scratch/container.lock]
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        umask 077
+        rm -rf /scratch/snapshot
+        resticprofile schedule
+        exec supercronic /scratch/crontab
     read_only: true
     cap_drop: [ALL]
     security_opt:
@@ -11,7 +20,7 @@ services:
     mem_limit: 256m
     cpus: 0.25
     environment:
-      RESTIC_CACHE_DIR: /scratch/cache
+      HOME: /tmp
       GOMAXPROCS: "1"
       GOMEMLIMIT: 192MiB
     tmpfs:

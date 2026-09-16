@@ -4,12 +4,10 @@ services:
       file: ../backup/compose.yaml
       service: backup
     user: "1000:1000"
-    environment:
-      BACKUP_APP: uptime-kuma
     volumes:
       - type: bind
         source: .
-        target: /etc/backup
+        target: /resticprofile
         read_only: true
         bind:
           create_host_path: false

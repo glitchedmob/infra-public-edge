@@ -1,3 +1,0 @@
-0 8 * * * /bin/sh /etc/backup-common/run.sh backup
-0 9 * * 1 /bin/sh /etc/backup-common/run.sh check
-0 10 * * 0 /bin/sh /etc/backup-common/run.sh prune

@@ -152,19 +152,16 @@
               loop: "{{ ['compose.yaml', 'backup/compose.yaml'] + (compose_service_names | map('regex_replace', '$', '/compose.yaml') | list) }}"
               changed_when: false
 
-            - name: Stage backup scripts and schedules
+            - name: Stage Resticprofile configuration
               ansible.builtin.copy:
                 src: "{{ compose_source }}/{{ item }}"
                 dest: "{{ compose_staging.path }}/{{ item }}"
                 mode: "0644"
               loop:
-                - backup/run.sh
-                - headscale/backup.sh
-                - headscale/crontab
-                - headplane/backup.sh
-                - headplane/crontab
-                - uptime-kuma/backup.sh
-                - uptime-kuma/crontab
+                - backup/profiles.yaml
+                - headscale/profiles.yaml
+                - headplane/profiles.yaml
+                - uptime-kuma/profiles.yaml
               changed_when: false
 
             - name: Render application configuration locally
@@ -229,7 +226,7 @@
         remove_orphans: true
 
   handlers:
-    - name: Restart backup services when scripts or schedules change
+    - name: Restart backup services when profiles change
       listen: Apply configuration changes
       community.docker.docker_compose_v2:
         state: present
@@ -241,8 +238,7 @@
         label: "{{ item.name }}"
       when: >-
         ' backup/' in compose_sync.msg or
-        ' ' ~ item.name ~ '/backup.sh' in compose_sync.msg or
-        ' ' ~ item.name ~ '/crontab' in compose_sync.msg
+        ' ' ~ item.name ~ '/profiles.yaml' in compose_sync.msg
 
     - name: Restart coredns
       listen: Apply configuration changes
