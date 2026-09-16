@@ -83,6 +83,27 @@
         - { path: /secrets, mode: "0700" }
         - { path: /data, mode: "0755" }
 
+    - name: Configure persistent loopback address for private DNS
+      ansible.builtin.copy:
+        dest: /etc/network/interfaces.d/private-dns
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          auto lo:0
+          iface lo:0 inet static
+              address 10.255.255.1
+              netmask 255.255.255.255
+
+    - name: Bring up private DNS loopback address
+      ansible.builtin.command:
+        cmd: ifup lo:0
+      register: private_dns_ifup
+      changed_when: "'already configured' not in private_dns_ifup.stderr"
+      failed_when: >-
+        private_dns_ifup.rc != 0 and
+        'ifup: interface lo:0 already configured' not in private_dns_ifup.stderr
+
     - name: Enable and start Docker
       ansible.builtin.systemd_service:
         name: docker
