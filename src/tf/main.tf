@@ -154,13 +154,14 @@ resource "vultr_instance" "node_02" {
 resource "ansible_host" "node_02" {
   name = local.node_02_hostname
   variables = {
-    # Use public SSH until this node is enrolled in Headscale.
-    ansible_host         = vultr_instance.node_02.main_ip
-    ansible_user         = local.user
-    public_ssh_host      = vultr_instance.node_02.main_ip
-    public_ipv4          = vultr_instance.node_02.main_ip
-    public_ipv6          = vultr_instance.node_02.v6_main_ip
-    ssm_private_key_path = module.ssh_key.ssm_path
+    ansible_user               = local.user
+    public_ssh_host            = vultr_instance.node_02.main_ip
+    tailscale_ssh_host         = local.node_02_hostname
+    public_ipv4                = vultr_instance.node_02.main_ip
+    public_ipv6                = vultr_instance.node_02.v6_main_ip
+    ssm_private_key_path       = module.ssh_key.ssm_path
+    tailscale_login_server     = "https://${local.headscale_hostname}.${data.cloudflare_zone.levizitting_com.name}"
+    ssm_tailscale_authkey_path = "/homelab/headscale/infra-public-edge/${local.node_02_hostname}-auth-key"
   }
 }
 

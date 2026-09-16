@@ -1,63 +1,47 @@
 ---
 - name: Configure Tailscale with Headscale
-  hosts: x86-vps-node-01
+  hosts: x86-vps-node-02
   become: true
+  gather_facts: false
+  pre_tasks:
+    - name: Load SSH private key once
+      ansible.builtin.set_fact:
+        ansible_ssh_private_key: "{{ ansible_ssh_private_key }}"
+      no_log: true
+
+    - name: Gather host facts
+      ansible.builtin.setup:
   tasks:
     - name: Assert Headscale login server is set
       ansible.builtin.assert:
         that:
           - tailscale_login_server is defined
           - tailscale_login_server | length > 0
-        fail_msg: "Set tailscale_login_server for x86-vps-node-01."
+        fail_msg: "Set tailscale_login_server for {{ inventory_hostname }}."
 
     - name: Assert SSM auth key path is set
       ansible.builtin.assert:
         that:
           - ssm_tailscale_authkey_path is defined
           - ssm_tailscale_authkey_path | length > 0
-        fail_msg: "Set ssm_tailscale_authkey_path for x86-vps-node-01."
+        fail_msg: "Set ssm_tailscale_authkey_path for {{ inventory_hostname }}."
 
     - name: Fetch Tailscale auth key from SSM
       ansible.builtin.set_fact:
         tailscale_authkey_value: "{{ lookup('amazon.aws.aws_ssm', ssm_tailscale_authkey_path) }}"
-
-    - name: Configure persistent virtual loopback IP for CoreDNS
-      ansible.builtin.blockinfile:
-        path: /etc/network/interfaces
-        marker: "# {mark} ANSIBLE MANAGED: loopback DNS IP"
-        block: |
-          auto lo:0
-          iface lo:0 inet static
-              address 10.255.255.1
-              netmask 255.255.255.255
-
-    - name: Bring up loopback alias
-      ansible.builtin.command:
-        cmd: ifup lo:0
-      register: _ifup
-      changed_when: false
-      failed_when: "_ifup.rc != 0 and 'ifup: interface lo:0 already configured' not in _ifup.stderr"
+      no_log: true
 
     - name: Install and configure Tailscale
       ansible.builtin.include_role:
         name: artis3n.tailscale.machine
       vars:
+        state: present
         tailscale_authkey: "{{ tailscale_authkey_value }}"
+        tailscale_tags:
+          - infra-public-edge
+        # DNS routing will be enabled after the private DNS listener is published.
         tailscale_args: >-
           --login-server={{ tailscale_login_server }}
+          --hostname={{ inventory_hostname }}
           --accept-routes
           --accept-dns=false
-          --advertise-exit-node
-          --advertise-routes=10.255.255.1/32
-          --advertise-tags=tag:infra-public-edge
-
-    - name: Write /etc/resolv.conf
-      ansible.builtin.copy:
-        dest: /etc/resolv.conf
-        owner: root
-        group: root
-        mode: "0644"
-        content: |
-          nameserver 2606:4700:4700::1111
-          nameserver 1.1.1.1
-          nameserver 1.0.0.1
