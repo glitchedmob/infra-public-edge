@@ -45,3 +45,26 @@ http:
       loadBalancer:
         servers:
           - url: http://uptime-kuma:3001
+
+tcp:
+  routers:
+    coredns:
+      entryPoints: [dns-tcp]
+      rule: HostSNI(`*`)
+      service: coredns
+  services:
+    coredns:
+      loadBalancer:
+        servers:
+          - address: coredns:1053
+
+udp:
+  routers:
+    coredns:
+      entryPoints: [dns-udp]
+      service: coredns
+  services:
+    coredns:
+      loadBalancer:
+        servers:
+          - address: coredns:1053
