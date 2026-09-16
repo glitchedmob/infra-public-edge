@@ -1,16 +1,86 @@
 ---
-- name: Setup Public VPS
-  hosts: x86-vps-node-01
+- name: Bootstrap public edge node
+  hosts: x86-vps-node-02
   become: true
   vars:
-    k3s_version: v1.36.4+k3s1
-    server_group: all
-    api_endpoint: localhost
-    server_config_yaml: |
-      kube-apiserver-arg:
-        - service-account-issuer=https://k8s-oidc-edge.levizitting.com
-        - service-account-issuer=https://kubernetes.default.svc.cluster.local
-        - service-account-jwks-uri=https://k8s-oidc-edge.levizitting.com/openid/v1/jwks
-  roles:
-    - k3s.orchestration.prereq
-    - k3s.orchestration.k3s_server
+    deployment_directory: /opt/infra-public-edge
+  tasks:
+    - name: Install Docker repository dependencies
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - python3-debian
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Configure Docker apt repository
+      ansible.builtin.deb822_repository:
+        name: docker
+        types: deb
+        uris: https://download.docker.com/linux/debian
+        suites: "{{ ansible_facts['distribution_release'] }}"
+        components: stable
+        architectures: amd64
+        signed_by: https://download.docker.com/linux/debian/gpg
+        state: present
+      register: docker_repository
+
+    - name: Install Docker Engine and Compose
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+        state: present
+        update_cache: "{{ docker_repository.changed }}"
+
+    - name: Create Docker configuration directory
+      ansible.builtin.file:
+        path: /etc/docker
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Configure container log rotation
+      ansible.builtin.copy:
+        dest: /etc/docker/daemon.json
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          {
+            "log-driver": "local",
+            "log-opts": {
+              "max-size": "10m",
+              "max-file": "3"
+            }
+          }
+      notify: Restart Docker
+
+    - name: Create deployment directories
+      ansible.builtin.file:
+        path: "{{ deployment_directory }}{{ item.path }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "{{ item.mode }}"
+      loop:
+        - { path: "", mode: "0755" }
+        - { path: /config, mode: "0755" }
+        - { path: /secrets, mode: "0700" }
+        - { path: /data, mode: "0755" }
+
+    - name: Enable and start Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        enabled: true
+        state: started
+
+  handlers:
+    - name: Restart Docker
+      ansible.builtin.systemd_service:
+        name: docker
+        state: restarted
