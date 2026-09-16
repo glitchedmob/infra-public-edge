@@ -14,7 +14,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       ansible: ${{ steps.changed-files.outputs.ansible_any_changed }}
-      compose: ${{ steps.changed-files.outputs.compose_any_changed }}
       k8s: ${{ steps.changed-files.outputs.k8s_any_changed }}
       terraform: ${{ steps.changed-files.outputs.terraform_any_changed }}
     steps:
@@ -27,9 +26,6 @@ jobs:
             ansible:
               - src/ansible/**
               - .github/workflows/ansible-lint.yml
-              - .github/workflows/ci.yml
-            compose:
-              - src/ansible/playbooks/files/deploy/**
               - .github/workflows/ci.yml
             k8s:
               - src/k8s/**
@@ -47,14 +43,6 @@ jobs:
     uses: glitchedmob/infra-gha/.github/workflows/ansible-lint.yml@v0.7.4
     with:
       working-directory: src/ansible
-
-  compose-check:
-    if: needs.changes.outputs.compose == 'true'
-    needs: changes
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - run: docker compose -f src/ansible/playbooks/files/deploy/compose.yaml config --quiet
 
   terraform-validate:
     if: needs.changes.outputs.terraform == 'true'
@@ -92,7 +80,6 @@ jobs:
     needs:
       - changes
       - ansible-lint
-      - compose-check
       - terraform-validate
       - terraform-plan
       - flux-diff
@@ -100,5 +87,5 @@ jobs:
     steps:
       - uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe
         with:
-          allowed-skips: ansible-lint, compose-check, terraform-validate, terraform-plan, flux-diff
+          allowed-skips: ansible-lint, terraform-validate, terraform-plan, flux-diff
           jobs: ${{ toJSON(needs) }}

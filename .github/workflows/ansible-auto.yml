@@ -6,6 +6,8 @@ on:
     paths:
       - src/ansible/playbooks/apply.yml
       - src/ansible/playbooks/manifests/**
+      - src/ansible/playbooks/deploy.yml
+      - src/ansible/playbooks/compose/**
       - .github/workflows/ansible-auto.yml
 
 # To switch to public SSH (e.g. during a from-scratch rebuild where Headscale is down):
@@ -23,7 +25,9 @@ jobs:
       working-directory: src/ansible
       initialize-terraform: true
       terraform-working-directory: src/tf
-      trigger-map: '{"apply.yml": ["src/ansible/playbooks/apply.yml", "src/ansible/playbooks/manifests"]}'
+      trigger-map: >-
+        {"apply.yml": ["src/ansible/playbooks/apply.yml", "src/ansible/playbooks/manifests"],
+         "deploy.yml": ["src/ansible/playbooks/deploy.yml", "src/ansible/playbooks/compose/"]}
       headscale-login-server: https://headscale.levizitting.com
     secrets:
       envrc_content: ''

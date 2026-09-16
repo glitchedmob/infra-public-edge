@@ -5,7 +5,7 @@
   gather_facts: false
   vars:
     deployment_directory: /opt/infra-public-edge
-    compose_source: "{{ playbook_dir }}/files/deploy"
+    compose_source: "{{ playbook_dir }}/compose"
     headscale_hostname: headscale.levizitting.com
     uptime_kuma_hostname: uptime.levizitting.com
     acme_email: me@levizitting.com
