@@ -1,0 +1,151 @@
+---
+- name: Deploy public edge applications
+  hosts: x86-vps-node-02
+  become: true
+  gather_facts: false
+  vars:
+    deployment_directory: /opt/infra-public-edge
+    compose_source: "{{ playbook_dir }}/../../compose"
+    headscale_hostname: headscale.levizitting.com
+    uptime_kuma_hostname: uptime.levizitting.com
+    acme_email: me@levizitting.com
+    # Keep the existing secret while moving applications off node 1.
+    ssm_cookie_secret_path: /homelab/x86-vps-node-01/headplane-cookie-secret
+    compose_apps:
+      - { name: traefik, uid: 10003 }
+      - { name: headscale, uid: 10001 }
+      - { name: headplane, uid: 10002 }
+      - { name: uptime-kuma, uid: 1000 }
+  module_defaults:
+    community.docker.docker_compose_v2:
+      project_src: "{{ deployment_directory }}"
+      wait: true
+      wait_timeout: 180
+  tasks:
+    - name: Create Compose service directories
+      ansible.builtin.file:
+        path: "{{ deployment_directory }}/{{ item.name }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      loop: "{{ compose_apps }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Create application configuration directories
+      ansible.builtin.file:
+        path: "{{ deployment_directory }}/config/{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      loop:
+        - traefik/dynamic
+        - headscale
+        - headscale-dns
+        - headplane
+
+    - name: Create application data directories
+      ansible.builtin.file:
+        path: "{{ deployment_directory }}/data/{{ item.name }}"
+        state: directory
+        owner: "{{ item.uid }}"
+        group: "{{ item.uid }}"
+        mode: "0700"
+      loop: "{{ compose_apps }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Create Headplane secret directory
+      ansible.builtin.file:
+        path: "{{ deployment_directory }}/secrets/headplane"
+        state: directory
+        owner: root
+        group: "10002"
+        mode: "0750"
+
+    - name: Install Headplane cookie secret
+      ansible.builtin.copy:
+        content: "{{ lookup('amazon.aws.ssm_parameter', ssm_cookie_secret_path) }}"
+        dest: "{{ deployment_directory }}/secrets/headplane/cookie_secret"
+        owner: root
+        group: "10002"
+        mode: "0440"
+      no_log: true
+      diff: false
+      notify: Restart headplane
+
+    - name: Render application configuration
+      ansible.builtin.template:
+        src: "{{ compose_source }}/{{ item.src }}"
+        dest: "{{ deployment_directory }}/config/{{ item.dest }}"
+        owner: root
+        group: root
+        mode: "0644"
+      loop:
+        - { src: traefik/traefik.yaml.j2, dest: traefik/traefik.yaml, service: traefik }
+        - { src: traefik/apps.yaml.j2, dest: traefik/dynamic/apps.yaml, service: traefik }
+        - { src: headscale/config.yaml.j2, dest: headscale/config.yaml, service: headscale }
+        - { src: headplane/config.yaml.j2, dest: headplane/config.yaml, service: headplane }
+      loop_control:
+        label: "{{ item.dest }}"
+      notify: "Restart {{ item.service }}"
+
+    - name: Install Headscale DNS records
+      ansible.builtin.copy:
+        src: "{{ compose_source }}/headscale/extra-records.json"
+        dest: "{{ deployment_directory }}/config/headscale-dns/extra-records.json"
+        owner: root
+        group: root
+        mode: "0644"
+      notify:
+        - Restart headscale
+        - Restart headplane
+
+    - name: Install Compose project
+      ansible.builtin.copy:
+        src: "{{ compose_source }}/compose.yaml"
+        dest: "{{ deployment_directory }}/compose.yaml"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Install Compose services
+      ansible.builtin.copy:
+        src: "{{ compose_source }}/{{ item.name }}/compose.yaml"
+        dest: "{{ deployment_directory }}/{{ item.name }}/compose.yaml"
+        owner: root
+        group: root
+        mode: "0644"
+      loop: "{{ compose_apps }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Apply configuration changes before checking application health
+      ansible.builtin.meta: flush_handlers
+
+    - name: Start applications
+      community.docker.docker_compose_v2:
+        state: present
+
+  handlers:
+    - name: Restart traefik
+      community.docker.docker_compose_v2:
+        state: present
+        recreate: always
+        services: [traefik]
+
+    - name: Restart headscale
+      community.docker.docker_compose_v2:
+        state: present
+        recreate: always
+        services: [headscale]
+
+    - name: Restart headplane
+      listen: Restart headscale
+      community.docker.docker_compose_v2:
+        state: present
+        recreate: always
+        services: [headplane]
+        dependencies: false

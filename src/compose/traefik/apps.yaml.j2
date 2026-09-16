@@ -1,0 +1,47 @@
+http:
+  routers:
+    headscale:
+      rule: {{ ('Host(' ~ (headscale_hostname | to_json) ~ ')') | to_json }}
+      priority: 10
+      entryPoints:
+        - websecure
+      service: headscale
+      middlewares:
+        - strip-true-client-ip
+      tls:
+        certResolver: letsencrypt
+    headplane:
+      rule: {{ ('Host(' ~ (headscale_hostname | to_json) ~ ') && (Path(`/admin`) || PathPrefix(`/admin/`))') | to_json }}
+      priority: 100
+      entryPoints:
+        - websecure
+      service: headplane
+      tls:
+        certResolver: letsencrypt
+    uptime-kuma:
+      rule: {{ ('Host(' ~ (uptime_kuma_hostname | to_json) ~ ')') | to_json }}
+      entryPoints:
+        - websecure
+      service: uptime-kuma
+      tls:
+        certResolver: letsencrypt
+
+  middlewares:
+    strip-true-client-ip:
+      headers:
+        customRequestHeaders:
+          True-Client-IP: ""
+
+  services:
+    headscale:
+      loadBalancer:
+        servers:
+          - url: http://headscale:8080
+    headplane:
+      loadBalancer:
+        servers:
+          - url: http://headplane:3000
+    uptime-kuma:
+      loadBalancer:
+        servers:
+          - url: http://uptime-kuma:3001

@@ -1,15 +1,16 @@
 # infra-public-edge
 
-Provisions and operates the LZ public edge platform, including the VPS and Kubernetes resources that route public traffic and run edge-hosted services.
+Provisions and operates the LZ public edge platform. Production runs on node 1 with Kubernetes; node 2 is being prepared to run Docker Compose.
 
 ## Scope
-- Owns: public edge VPS provisioning, cluster bootstrap, and edge-cluster Kubernetes resources.
+- Owns: public edge VPS provisioning, host bootstrap, and edge-hosted services.
 - Owns: public DNS entrypoint and edge forwarding paths for `levizitting.com` and `sgf.dev` traffic.
 
 ## Structure
 - `src/tf/`: Provisions Vultr compute/firewall, Cloudflare DNS records, and AWS SSM parameters.
-- `src/ansible/`: Bootstraps host and k3s, then applies base cluster configuration.
-- `src/k8s/`: Kubernetes manifests for edge services and domain forwarding behavior.
+- `src/ansible/`: Bootstraps Docker and deploys Compose applications on node 2. Legacy playbooks still manage node 1.
+- `src/compose/`: Traefik, Headscale, Headplane, and Uptime Kuma for node 2.
+- `src/k8s/`: Existing production Kubernetes manifests for node 1.
 
 ## Edge routing model
 - Public hostnames resolve to the edge node (`x86-vps-node-01.levizitting.com`).
@@ -28,9 +29,27 @@ make help
 make tf-init
 make tf-plan
 make ansible-install
-make ansible PLAYBOOK=bootstrap.yml
-make ansible PLAYBOOK=apply.yml
+EDGE_CONNECTION_MODE=public make ansible PLAYBOOK=bootstrap.yml
+EDGE_CONNECTION_MODE=public make ansible PLAYBOOK=deploy.yml
 ```
+
+## Compose applications
+
+`deploy.yml` targets only `x86-vps-node-02`. It creates app-owned data directories, reads the existing Headplane cookie secret from SSM without logging it, renders configuration, and starts the Compose project in `/opt/infra-public-edge`. Run bootstrap first. Config and secret changes restart the affected services; Compose handles image and service-definition changes. Health checks live in Compose.
+
+The four services share a Docker bridge network. Only Traefik's HTTP/HTTPS ports and Headscale's UDP STUN port are published. Traefik uses file-based routing and HTTP-01 certificates, without Docker socket access. Headplane stays at `https://headscale.levizitting.com/admin`; Kuma stays at `https://uptime.levizitting.com`.
+
+All application processes run as non-root, with a read-only root filesystem, dropped capabilities, and `no-new-privileges`. Docker itself remains rootful, so this does not introduce rootless Docker's networking overhead. Data ownership is Headscale `10001:10001`, Headplane `10002:10002`, Traefik `10003:10003`, and Kuma `1000:1000`.
+
+- Headplane can administer Headscale through its API. Editing Headscale's configuration or DNS records stays in Ansible, not the UI.
+- Kuma permits ordinary ping through `ping_group_range`. It retains `NET_RAW` in the capability bounding set because the image's capability-marked ping binary otherwise fails to execute. The non-root Node process has no effective capabilities, and `no-new-privileges` prevents gaining them through execution. Its optional DNS cache cannot start its root helper; disable that setting in Kuma. Without the cache, repeated system-resolver lookups may cost more DNS traffic and latency. The slim image has no local browser, and this setup does not permit runtime package installation or Docker socket monitoring.
+- `restart: unless-stopped` restarts exited processes. Docker health checks mark unhealthy services but do not restart a process that is still running.
+
+This playbook does not migrate existing databases, change public DNS, or replace node 1's routing. HTTP-01 certificate issuance requires both public A and AAAA traffic to reach node 2. Until cutover, do not expect trusted certificates there. Preserve application data and Headscale identity keys during the later migration; deployment does not copy or reset them. Restored files must have the ownership listed above.
+
+Backups, DNS forwarding, zone forwarding, and Tailscale configuration are not part of this deployment yet. Node 1's Kubernetes files, `apply.yml`, and existing automation remain intact while it serves production. The manual workflow offers `deploy.yml`; new Compose changes do not trigger an automatic deployment.
+
+Check the Compose definitions locally with `docker compose -f src/compose/compose.yaml config --quiet`.
 
 ## Connectivity
 

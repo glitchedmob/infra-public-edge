@@ -1,0 +1,12 @@
+[
+  {
+    "name": "router.headnet.levizitting.com",
+    "type": "A",
+    "value": "10.0.0.1"
+  },
+  {
+    "name": "switch.headnet.levizitting.com",
+    "type": "A",
+    "value": "10.0.0.2"
+  }
+]

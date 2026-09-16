@@ -1,0 +1,35 @@
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:2.4.0-slim
+    user: "1000:1000"
+    read_only: true
+    cap_drop:
+      - ALL
+    # The image's ping binary has a NET_RAW file capability. Without this
+    # bounding-set entry, exec fails even when unprivileged ping is enabled.
+    cap_add:
+      - NET_RAW
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: 0.5
+    environment:
+      HOME: /tmp
+    volumes:
+      - type: bind
+        source: ../data/uptime-kuma
+        target: /app/data
+        read_only: false
+        bind:
+          create_host_path: false
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=64m,mode=1777
+    sysctls:
+      net.ipv4.ping_group_range: "1000 1000"
+    healthcheck:
+      test: ["CMD", "/app/extra/healthcheck"]
+      interval: 60s
+      timeout: 30s
+      start_period: 180s
+      retries: 5

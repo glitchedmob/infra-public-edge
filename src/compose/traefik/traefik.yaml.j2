@@ -1,0 +1,29 @@
+entryPoints:
+  web:
+    address: ":8080"
+    http:
+      redirections:
+        entryPoint:
+          to: ":443"
+          scheme: https
+          permanent: true
+  websecure:
+    address: ":8443"
+  health:
+    address: "127.0.0.1:8082"
+
+providers:
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
+
+ping:
+  entryPoint: health
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: {{ acme_email | to_json }}
+      storage: /data/acme.json
+      httpChallenge:
+        entryPoint: web

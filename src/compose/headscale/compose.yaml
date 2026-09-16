@@ -1,0 +1,38 @@
+services:
+  headscale:
+    image: headscale/headscale:v0.29.3
+    user: "10001:10001"
+    command: [serve]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: 0.5
+    ports:
+      - "3478:3478/udp"
+    volumes:
+      - type: bind
+        source: ../config/headscale
+        target: /etc/headscale
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ../config/headscale-dns
+        target: /etc/headscale-dns
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ../data/headscale
+        target: /var/lib/headscale
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: [CMD, /ko-app/headscale, --config, /etc/headscale/config.yaml, health]
+      interval: 10s
+      timeout: 6s
+      start_period: 120s
+      retries: 6

@@ -1,0 +1,7 @@
+name: infra-public-edge
+
+include:
+  - traefik/compose.yaml
+  - headscale/compose.yaml
+  - headplane/compose.yaml
+  - uptime-kuma/compose.yaml
