@@ -4,13 +4,9 @@ on:
   push:
     branches: [main]
     paths:
-      - src/ansible/playbooks/apply.yml
-      - src/ansible/playbooks/manifests/**
       - src/ansible/playbooks/deploy.yml
       - src/ansible/playbooks/compose/**
       - .github/workflows/ansible-auto.yml
-
-# Use public SSH until Tailscale connectivity is ready.
 
 permissions:
   contents: read
@@ -24,11 +20,10 @@ jobs:
       initialize-terraform: true
       terraform-working-directory: src/tf
       trigger-map: >-
-        {"apply.yml": ["src/ansible/playbooks/apply.yml", "src/ansible/playbooks/manifests"],
-         "deploy.yml": ["src/ansible/playbooks/deploy.yml", "src/ansible/playbooks/compose/"]}
-      headscale-login-server: ''
+        {"deploy.yml": ["src/ansible/playbooks/deploy.yml", "src/ansible/playbooks/compose/"]}
+      headscale-login-server: https://headscale.levizitting.com
     secrets:
-      envrc_content: 'export EDGE_CONNECTION_MODE=public'
+      envrc_content: 'export EDGE_CONNECTION_MODE=tailscale'
       aws_role_arn: ${{ secrets.AWS_ROLE_ARN }}
       output_encryption_key: ${{ secrets.OUTPUT_ENCRYPTION_KEY }}
-      headscale_auth_key: ''
+      headscale_auth_key: ${{ secrets.HEADSCALE_AUTH_KEY }}

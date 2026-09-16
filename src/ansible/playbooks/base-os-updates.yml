@@ -1,6 +1,6 @@
 ---
 - name: Install Base OS Updates
-  hosts: x86-vps-node-01
+  hosts: x86-vps-node-02
   become: true
   gather_facts: true
   tasks:

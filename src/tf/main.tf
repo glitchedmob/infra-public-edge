@@ -1,108 +1,43 @@
 locals {
-  vultr_2_cpu_2_gb_ram      = "vc2-2c-2gb"
-  vultr_2_cpu_4_gb_ram      = "vc2-2c-4gb"
-  vultr_debian_13_x64_os_id = 2625
-  firewall_rules = [
-    # { protocol = "tcp", port = "22", ip_types = ["v4", "v6"], notes = "Allow SSH" },
+  node_02_hostname = "x86-vps-node-02"
+  node_02_plan     = "vc2-2c-2gb"
+  node_02_os_id    = 2625 # Debian 13 x64
+  node_02_firewall_rules = [
     { protocol = "tcp", port = "80", ip_types = ["v4", "v6"], notes = "Allow HTTP" },
     { protocol = "tcp", port = "443", ip_types = ["v4", "v6"], notes = "Allow HTTPS" },
     { protocol = "udp", port = "3478", ip_types = ["v4", "v6"], notes = "Allow DERP" },
     { protocol = "tcp", port = "3478", ip_types = ["v4", "v6"], notes = "Allow DERP" },
   ]
-  node_02_hostname = "x86-vps-node-02"
-  node_02_firewall_rules = distinct(concat(local.firewall_rules, [
-    { protocol = "tcp", port = "22", ip_types = ["v4", "v6"], notes = "Allow SSH" },
-  ]))
-  user                         = "admin"
-  ipv6_normalized              = cidrhost("${vultr_instance.this.v6_main_ip}/128", 0)
-  dns_record_comment           = "managedBy=tf,repo=glitchedmob/infra-public-edge"
-  headscale_hostname           = "headscale"
-  hostname                     = "x86-vps-node-01"
-  vps_fqdn                     = "${local.hostname}.${data.cloudflare_zone.levizitting_com.name}"
-  github_status_token_ssm_path = "/homelab/${local.hostname}/flux-github-status-token"
-
+  ssh_user           = "admin"
+  dns_record_comment = "managedBy=tf,repo=glitchedmob/infra-public-edge"
+  headscale_hostname = "headscale"
 }
 
+# Node 02 uses this existing key. Preserve its name and SSM path to avoid
+# rotating the key or changing the instance's cloud-init user data.
 module "ssh_key" {
   source               = "git::https://github.com/glitchedmob/infra-shared.git//src/tf/modules/ssh-key?ref=main"
-  name                 = local.hostname
+  name                 = "x86-vps-node-01"
   key_version          = 2
-  ssm_private_key_path = "/homelab/${local.hostname}/ssh-private-key"
+  ssm_private_key_path = "/homelab/x86-vps-node-01/ssh-private-key"
 }
 
-module "flux_deploy_key" {
-  source               = "git::https://github.com/glitchedmob/infra-shared.git//src/tf/modules/ssh-key?ref=main"
-  name                 = "flux-${local.hostname}"
-  ssm_private_key_path = "/homelab/${local.hostname}/flux-git-private-key"
-  ssm_public_key_path  = "/homelab/${local.hostname}/flux-git-public-key"
-  key_version          = 2
-}
-
-ephemeral "random_password" "cookie_secret" {
+ephemeral "random_password" "headplane_cookie_secret" {
   length  = 32
   special = false
 }
 
-resource "aws_ssm_parameter" "cookie_secret" {
-  name             = "/homelab/${local.hostname}/headplane-cookie-secret"
+# This application secret survives node replacements; retain its existing path.
+resource "aws_ssm_parameter" "headplane_cookie_secret" {
+  name             = "/homelab/x86-vps-node-01/headplane-cookie-secret"
   type             = "SecureString"
-  value_wo         = ephemeral.random_password.cookie_secret.result
+  value_wo         = ephemeral.random_password.headplane_cookie_secret.result
   value_wo_version = 1
 }
 
-resource "aws_ssm_parameter" "github_status_token" {
-  name             = local.github_status_token_ssm_path
-  type             = "SecureString"
-  value_wo         = "CHANGEME"
-  value_wo_version = 1
-}
-
-
-
-resource "vultr_firewall_group" "this" {
-  description = "${local.hostname} firewall group"
-}
-
-resource "vultr_firewall_rule" "fw_rules" {
-  for_each = {
-    for rule in flatten([
-      for _, rule in local.firewall_rules : [
-        for ip_type in rule.ip_types : {
-          key         = "${ip_type}-${rule.protocol}-${rule.port}"
-          protocol    = rule.protocol
-          port        = rule.port
-          ip_type     = ip_type
-          notes       = rule.notes
-          subnet      = ip_type == "v4" ? "0.0.0.0" : "::"
-          subnet_size = 0
-        }
-      ]
-    ]) : rule.key => rule
-  }
-
-  firewall_group_id = vultr_firewall_group.this.id
-  protocol          = each.value.protocol
-  port              = each.value.port
-  ip_type           = each.value.ip_type
-  notes             = each.value.notes
-  subnet            = each.value.subnet
-  subnet_size       = each.value.subnet_size
-}
-
-resource "vultr_instance" "this" {
-  plan              = local.vultr_2_cpu_4_gb_ram
-  region            = var.vultr_region
-  os_id             = local.vultr_debian_13_x64_os_id
-  label             = local.hostname
-  hostname          = local.hostname
-  enable_ipv6       = true
-  backups           = "disabled"
-  ddos_protection   = false
-  firewall_group_id = vultr_firewall_group.this.id
-  user_data = templatefile("${path.module}/cloud-config.yml.tftpl", {
-    ssh_keys = [module.ssh_key.public_key]
-    user     = local.user
-  })
+moved {
+  from = aws_ssm_parameter.cookie_secret
+  to   = aws_ssm_parameter.headplane_cookie_secret
 }
 
 resource "vultr_firewall_group" "node_02" {
@@ -136,9 +71,9 @@ resource "vultr_firewall_rule" "node_02" {
 }
 
 resource "vultr_instance" "node_02" {
-  plan              = local.vultr_2_cpu_2_gb_ram
+  plan              = local.node_02_plan
   region            = var.vultr_region
-  os_id             = local.vultr_debian_13_x64_os_id
+  os_id             = local.node_02_os_id
   label             = local.node_02_hostname
   hostname          = local.node_02_hostname
   enable_ipv6       = true
@@ -147,14 +82,14 @@ resource "vultr_instance" "node_02" {
   firewall_group_id = vultr_firewall_group.node_02.id
   user_data = templatefile("${path.module}/cloud-config.yml.tftpl", {
     ssh_keys = [module.ssh_key.public_key]
-    user     = local.user
+    user     = local.ssh_user
   })
 }
 
 resource "ansible_host" "node_02" {
   name = local.node_02_hostname
   variables = {
-    ansible_user               = local.user
+    ansible_user               = local.ssh_user
     public_ssh_host            = vultr_instance.node_02.main_ip
     tailscale_ssh_host         = local.node_02_hostname
     public_ipv4                = vultr_instance.node_02.main_ip
@@ -162,24 +97,5 @@ resource "ansible_host" "node_02" {
     ssm_private_key_path       = module.ssh_key.ssm_path
     tailscale_login_server     = "https://${local.headscale_hostname}.${data.cloudflare_zone.levizitting_com.name}"
     ssm_tailscale_authkey_path = "/homelab/headscale/infra-public-edge/${local.node_02_hostname}-auth-key"
-  }
-}
-
-resource "ansible_host" "this" {
-  name = local.hostname
-  variables = {
-    ansible_user                  = local.user
-    public_ssh_host               = vultr_instance.this.main_ip
-    tailscale_ssh_host            = local.hostname
-    public_ipv4                   = vultr_instance.this.main_ip
-    public_ipv6                   = vultr_instance.this.v6_main_ip
-    ssm_private_key_path          = module.ssh_key.ssm_path
-    ssm_cookie_secret_path        = aws_ssm_parameter.cookie_secret.name
-    ssm_flux_git_private_key_path = module.flux_deploy_key.ssm_path
-    ssm_github_status_token_path  = aws_ssm_parameter.github_status_token.name
-    domain                        = data.cloudflare_zone.levizitting_com.name
-    headscale_hostname            = "${local.headscale_hostname}.${data.cloudflare_zone.levizitting_com.name}"
-    tailscale_login_server        = "https://${local.headscale_hostname}.${data.cloudflare_zone.levizitting_com.name}"
-    ssm_tailscale_authkey_path    = "/homelab/headscale/infra-public-edge/${local.hostname}-auth-key"
   }
 }

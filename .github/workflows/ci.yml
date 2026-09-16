@@ -14,7 +14,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       ansible: ${{ steps.changed-files.outputs.ansible_any_changed }}
-      k8s: ${{ steps.changed-files.outputs.k8s_any_changed }}
       terraform: ${{ steps.changed-files.outputs.terraform_any_changed }}
     steps:
       - uses: actions/checkout@v7
@@ -27,13 +26,8 @@ jobs:
               - src/ansible/**
               - .github/workflows/ansible-lint.yml
               - .github/workflows/ci.yml
-            k8s:
-              - src/k8s/**
-              - .github/workflows/flux-diff.yml
-              - .github/workflows/ci.yml
             terraform:
               - src/tf/**
-              - .github/workflows/tf-plan.yml
               - .github/workflows/tf-plan-apply.yml
               - .github/workflows/ci.yml
 
@@ -68,12 +62,6 @@ jobs:
       aws_role_arn: ${{ secrets.AWS_ROLE_ARN }}
       output_encryption_key: ${{ secrets.OUTPUT_ENCRYPTION_KEY }}
 
-  flux-diff:
-    if: needs.changes.outputs.k8s == 'true'
-    needs: changes
-    uses: ./.github/workflows/flux-diff.yml
-    secrets: inherit
-
   ci-checks:
     name: CI checks
     if: always()
@@ -82,10 +70,9 @@ jobs:
       - ansible-lint
       - terraform-validate
       - terraform-plan
-      - flux-diff
     runs-on: ubuntu-latest
     steps:
       - uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe
         with:
-          allowed-skips: ansible-lint, terraform-validate, terraform-plan, flux-diff
+          allowed-skips: ansible-lint, terraform-validate, terraform-plan
           jobs: ${{ toJSON(needs) }}
