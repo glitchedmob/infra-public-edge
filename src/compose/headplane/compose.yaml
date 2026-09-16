@@ -10,6 +10,8 @@ services:
     restart: unless-stopped
     mem_limit: 256m
     cpus: 0.5
+    networks:
+      - headscale
     depends_on:
       headscale:
         condition: service_healthy

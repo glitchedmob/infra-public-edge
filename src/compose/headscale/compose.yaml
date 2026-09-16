@@ -10,6 +10,8 @@ services:
     restart: unless-stopped
     mem_limit: 256m
     cpus: 0.5
+    networks:
+      - headscale
     ports:
       - "3478:3478/udp"
     volumes:

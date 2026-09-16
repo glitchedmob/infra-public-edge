@@ -11,6 +11,9 @@ services:
       - no-new-privileges:true
     restart: unless-stopped
     mem_limit: 256m
+    networks:
+      - headscale
+      - uptime-kuma
     ports:
       - "80:8080"
       - "443:8443"
