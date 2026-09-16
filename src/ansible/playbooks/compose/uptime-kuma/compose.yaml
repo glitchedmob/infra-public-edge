@@ -1,4 +1,34 @@
 services:
+  uptime-kuma-backup:
+    extends:
+      file: ../backup/compose.yaml
+      service: backup
+    user: "1000:1000"
+    volumes:
+      - type: bind
+        source: .
+        target: /resticprofile
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ../data/uptime-kuma
+        target: /source
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ../secrets/backups/uptime-kuma
+        target: /run/secrets/backup
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /var/lib/infra-public-edge-backups/uptime-kuma
+        target: /scratch
+        bind:
+          create_host_path: false
+
   uptime-kuma:
     image: louislam/uptime-kuma:2.4.0-slim
     user: "1000:1000"

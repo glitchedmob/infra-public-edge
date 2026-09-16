@@ -25,6 +25,8 @@ Provisions and operates the LZ public edge platform.
 ## Run
 Deployments require `rsync` on the control machine.
 
+Per-app Resticprofile backup configuration lives beside the [Compose definitions](src/ansible/playbooks/compose).
+
 ```bash
 make help
 make tf-init
@@ -54,7 +56,7 @@ make k9s
 - The generated kubeconfig uses the edge node's Tailscale hostname for the API server endpoint and TLS server name.
 - `make kubectl` and `make k9s` use the staged files in `.local/`; run `make cluster-access` once first and again when you want to refresh them.
 
-## Restore
+## Kubernetes restore
 ```bash
 make cluster-access
 make restore APP=headscale SNAPSHOT=162e7a85

@@ -1,0 +1,20 @@
+version: "1"
+includes: [/etc/backup-common/profiles.yaml]
+
+default:
+  inherit: base
+  backup:
+    host: headplane
+    stdin-filename: headplane-backup.tar
+    schedule: "*-*-* 08:20:00"
+    run-before:
+      - mkdir -m 700 /scratch/snapshot
+      - sqlite3 -readonly -bail /source/hp_persist.db '.timeout 10000' '.backup /scratch/snapshot/hp_persist.db'
+      - sqlite3 -bail /scratch/snapshot/hp_persist.db 'PRAGMA journal_mode=DELETE;'
+      - test "$(sqlite3 -readonly /scratch/snapshot/hp_persist.db 'PRAGMA integrity_check;')" = ok
+      - find /source -mindepth 1 -maxdepth 1 ! -name 'hp_persist.db*' -exec cp -a -t /scratch/snapshot {} +
+  check:
+    schedule: "Mon *-*-* 09:20:00"
+  forget:
+    host: headplane
+    schedule: "Sun *-*-* 10:20:00"

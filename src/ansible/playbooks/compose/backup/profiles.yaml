@@ -1,0 +1,32 @@
+version: "1"
+
+global:
+  scheduler: crontab:-:/scratch/crontab
+
+base:
+  env-file: /run/secrets/backup/backup.env
+  cache-dir: /scratch/cache
+  # Jobs and manual exec commands share this container's PID namespace and lock.
+  lock: /tmp/resticprofile.lock
+  force-inactive-lock: true
+  run-before:
+    - rm -rf /scratch/snapshot
+  run-finally:
+    - rm -rf /scratch/snapshot
+
+  backup:
+    tag: compose
+    stdin-command: tar -cf - -C /scratch/snapshot .
+    schedule-permission: user
+
+  check:
+    read-data-subset: 5%
+    schedule-permission: user
+
+  forget:
+    tag: compose
+    keep-last: 5
+    keep-daily: 14
+    keep-weekly: 4
+    prune: true
+    schedule-permission: user
