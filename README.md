@@ -23,6 +23,8 @@ Provisions and operates the LZ public edge platform.
 - Tailscale split-DNS is served by edge CoreDNS at `10.255.255.1` (reachable only over Tailscale). Records for that CoreDNS server are managed in `src/k8s/infrastructure/coredns/coredns-custom-configmap.yaml`.
 
 ## Run
+Deployments require `rsync` on the control machine.
+
 ```bash
 make help
 make tf-init

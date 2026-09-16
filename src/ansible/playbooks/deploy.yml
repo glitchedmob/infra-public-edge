@@ -17,6 +17,7 @@
       - { name: headplane, uid: 10002 }
       - { name: uptime-kuma, uid: 1000 }
       - { name: coredns }
+    compose_service_names: "{{ compose_apps | map(attribute='name') | list }}"
   module_defaults:
     community.docker.docker_compose_v2:
       project_src: "{{ deployment_directory }}"
@@ -28,31 +29,6 @@
         ansible_ssh_private_key: "{{ ansible_ssh_private_key }}"
       no_log: true
   tasks:
-    - name: Create Compose service directories
-      ansible.builtin.file:
-        path: "{{ deployment_directory }}/{{ item.name }}"
-        state: directory
-        owner: root
-        group: root
-        mode: "0755"
-      loop: "{{ compose_apps }}"
-      loop_control:
-        label: "{{ item.name }}"
-
-    - name: Create application configuration directories
-      ansible.builtin.file:
-        path: "{{ deployment_directory }}/config/{{ item }}"
-        state: directory
-        owner: root
-        group: root
-        mode: "0755"
-      loop:
-        - traefik/dynamic
-        - headscale
-        - headscale-dns
-        - headplane
-        - coredns
-
     - name: Create application data directories
       ansible.builtin.file:
         path: "{{ deployment_directory }}/data/{{ item.name }}"
@@ -80,95 +56,150 @@
         owner: root
         group: "10002"
         mode: "0440"
+      register: headplane_cookie_secret
       no_log: true
       diff: false
       notify: Restart headplane
 
-    - name: Render application configuration
-      ansible.builtin.template:
-        src: "{{ compose_source }}/{{ item.src }}"
-        dest: "{{ deployment_directory }}/config/{{ item.dest }}"
-        owner: root
-        group: root
-        mode: "0644"
-      loop:
-        - { src: traefik/traefik.yaml.j2, dest: traefik/traefik.yaml, service: traefik }
-        - { src: traefik/apps.yaml.j2, dest: traefik/dynamic/apps.yaml, service: traefik }
-        - { src: headscale/config.yaml.j2, dest: headscale/config.yaml, service: headscale }
-        - { src: headplane/config.yaml.j2, dest: headplane/config.yaml, service: headplane }
-      loop_control:
-        label: "{{ item.dest }}"
-      notify: "Restart {{ item.service }}"
+    - name: Stage and sync deployment files
+      block:
+        - name: Build local deployment tree
+          delegate_to: localhost
+          become: false
+          check_mode: false
+          diff: false
+          block:
+            # Temporary staging changes are not changes to the deployed configuration.
+            - name: Create local staging directory
+              ansible.builtin.tempfile:
+                state: directory
+                prefix: infra-public-edge-deploy-
+              register: compose_staging
+              changed_when: false
 
-    - name: Install Headscale DNS records
-      ansible.builtin.copy:
-        src: "{{ compose_source }}/headscale/extra-records.json"
-        dest: "{{ deployment_directory }}/config/headscale-dns/extra-records.json"
-        owner: root
-        group: root
-        mode: "0644"
-      notify:
-        - Restart headscale
-        - Restart headplane
+            - name: Create local service and configuration directories
+              ansible.builtin.file:
+                path: "{{ compose_staging.path }}/{{ item }}"
+                state: directory
+                mode: "0755"
+              loop: >-
+                {{ compose_service_names + ['config/traefik/dynamic', 'config/headscale',
+                   'config/headscale-dns', 'config/headplane', 'config/coredns'] }}
+              changed_when: false
 
-    - name: Install CoreDNS configuration
-      ansible.builtin.copy:
-        src: "{{ compose_source }}/coredns/Corefile"
-        dest: "{{ deployment_directory }}/config/coredns/Corefile"
-        owner: root
-        group: root
-        mode: "0644"
-      notify: Restart coredns
+            - name: Stage Compose definitions
+              ansible.builtin.copy:
+                src: "{{ compose_source }}/{{ item }}"
+                dest: "{{ compose_staging.path }}/{{ item }}"
+                mode: "0644"
+              loop: "{{ ['compose.yaml'] + (compose_service_names | map('regex_replace', '$', '/compose.yaml') | list) }}"
+              changed_when: false
 
-    - name: Install Compose project
-      ansible.builtin.copy:
-        src: "{{ compose_source }}/compose.yaml"
-        dest: "{{ deployment_directory }}/compose.yaml"
-        owner: root
-        group: root
-        mode: "0644"
+            - name: Render application configuration locally
+              ansible.builtin.template:
+                src: "{{ compose_source }}/{{ item.src }}"
+                dest: "{{ compose_staging.path }}/config/{{ item.dest }}"
+                mode: "0644"
+              loop:
+                - { src: traefik/traefik.yaml.j2, dest: traefik/traefik.yaml }
+                - { src: traefik/apps.yaml.j2, dest: traefik/dynamic/apps.yaml }
+                - { src: headscale/config.yaml.j2, dest: headscale/config.yaml }
+                - { src: headplane/config.yaml.j2, dest: headplane/config.yaml }
+              loop_control:
+                label: "{{ item.dest }}"
+              changed_when: false
 
-    - name: Install Compose services
-      ansible.builtin.copy:
-        src: "{{ compose_source }}/{{ item.name }}/compose.yaml"
-        dest: "{{ deployment_directory }}/{{ item.name }}/compose.yaml"
-        owner: root
-        group: root
-        mode: "0644"
-      loop: "{{ compose_apps }}"
-      loop_control:
-        label: "{{ item.name }}"
+            - name: Stage DNS configuration without templating
+              ansible.builtin.copy:
+                src: "{{ compose_source }}/{{ item.src }}"
+                dest: "{{ compose_staging.path }}/config/{{ item.dest }}"
+                mode: "0644"
+              loop:
+                - { src: headscale/extra-records.json, dest: headscale-dns/extra-records.json }
+                - { src: coredns/Corefile, dest: coredns/Corefile }
+              loop_control:
+                label: "{{ item.dest }}"
+              changed_when: false
+
+        - name: Sync deployment files and remove obsolete configuration
+          ansible.posix.synchronize:
+            src: "{{ compose_staging.path }}/"
+            dest: "{{ deployment_directory }}/"
+            use_ssh_args: true
+            checksum: true
+            times: false
+            delete: true
+            rsync_opts:
+              - --chown=root:root
+              - --chmod=D755,F644
+              # Exclusions also protect these directories from deletion.
+              - --exclude=/data/
+              - --exclude=/secrets/
+          register: compose_sync
+          notify: Apply configuration changes
+      always:
+        - name: Remove local deployment staging directory
+          ansible.builtin.file:
+            path: "{{ compose_staging.path }}"
+            state: absent
+          when: compose_staging.path is defined
+          delegate_to: localhost
+          become: false
+          check_mode: false
+          changed_when: false
 
     - name: Apply configuration changes before checking application health
       ansible.builtin.meta: flush_handlers
 
-    - name: Start applications
+    - name: Start applications and remove obsolete containers
       community.docker.docker_compose_v2:
         state: present
+        remove_orphans: true
 
   handlers:
     - name: Restart coredns
+      listen: Apply configuration changes
       community.docker.docker_compose_v2:
         state: present
         recreate: always
         services: [coredns]
+      when:
+        - "'coredns' in compose_service_names"
+        - "' config/coredns/' in compose_sync.msg"
 
     - name: Restart traefik
+      listen: Apply configuration changes
       community.docker.docker_compose_v2:
         state: present
         recreate: always
         services: [traefik]
+      when:
+        - "'traefik' in compose_service_names"
+        - "' config/traefik/' in compose_sync.msg"
 
     - name: Restart headscale
+      listen: Apply configuration changes
       community.docker.docker_compose_v2:
         state: present
         recreate: always
         services: [headscale]
+      when:
+        - "'headscale' in compose_service_names"
+        - >-
+          ' config/headscale/' in compose_sync.msg or
+          ' config/headscale-dns/' in compose_sync.msg
 
     - name: Restart headplane
-      listen: Restart headscale
+      listen: Apply configuration changes
       community.docker.docker_compose_v2:
         state: present
         recreate: always
         services: [headplane]
         dependencies: false
+      when:
+        - "'headplane' in compose_service_names"
+        - >-
+          headplane_cookie_secret.changed or
+          ' config/headplane/' in compose_sync.msg or
+          ' config/headscale/' in compose_sync.msg or
+          ' config/headscale-dns/' in compose_sync.msg

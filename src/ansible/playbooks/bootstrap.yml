@@ -14,11 +14,12 @@
     - name: Gather host facts
       ansible.builtin.setup:
   tasks:
-    - name: Install Docker repository dependencies
+    - name: Install bootstrap and deployment dependencies
       ansible.builtin.apt:
         name:
           - ca-certificates
           - python3-debian
+          - rsync
         state: present
         update_cache: true
         cache_valid_time: 3600
