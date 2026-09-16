@@ -25,6 +25,8 @@ Provisions and operates the LZ public edge platform.
 ## Run
 Deployments require `rsync` on the control machine.
 
+Per-app Resticprofile backup configuration lives beside the [Compose definitions](src/ansible/playbooks/compose).
+
 ```bash
 make help
 make tf-init
@@ -53,32 +55,6 @@ make k9s
 - `make cluster-access` fetches `/etc/rancher/k3s/k3s.yaml`, writes it to `.local/kube/infra-public-edge.yaml`, and stages the upstream `derailed/k9s` Flux plugin in `.local/k9s/plugins/flux.yaml`.
 - The generated kubeconfig uses the edge node's Tailscale hostname for the API server endpoint and TLS server name.
 - `make kubectl` and `make k9s` use the staged files in `.local/`; run `make cluster-access` once first and again when you want to refresh them.
-
-## Compose backups
-
-Headscale, Headplane, and Uptime Kuma each have a backup container beside their app definition. They use `ghcr.io/glitchedmob/restic-backup:1.0.1`, the existing B2 bucket, repository paths, and SSM passwords. Traefik and CoreDNS have no backup service.
-
-Daily backups run at 08:00, 08:20, and 08:40 UTC. Repository checks run Mondays an hour later, and pruning runs Sundays two hours later. Retention keeps 5 latest, 14 daily, and 4 weekly snapshots tagged `compose`. Existing k8up snapshots are not expired by these jobs. Disable any old k8up schedules before enabling the Compose schedules.
-
-`deploy.yml` reads `/homelab/public-edge/backups` from SSM and refuses missing or `CHANGEME` credentials. Each container gets its own restricted credential file and read-only application data. Scratch files and caches live in `/var/lib/infra-public-edge-backups/<app>`, outside the rsync-managed deployment tree.
-
-SQLite databases are snapshotted before upload. Missing or uninitialized databases fail the backup. Snapshots retain the k8up `<app>-backup.tar` archive format. Failures appear in container logs; off-host alerts are not configured.
-
-On the node, run a backup or list snapshots with:
-
-```bash
-cd /opt/infra-public-edge
-docker compose exec headscale-backup sh /etc/backup-common/run.sh backup
-docker compose exec headscale-backup sh /etc/backup-common/run.sh snapshots
-```
-
-For a Compose restore, stop the app and its backup service, then download the selected archive into scratch storage:
-
-```bash
-docker compose run --rm --no-deps headscale-backup sh /etc/backup-common/run.sh restore <snapshot-id> --target /scratch/restore
-```
-
-The archive is at `/var/lib/infra-public-edge-backups/headscale/restore/headscale-backup.tar`. Validate and unpack it into a separate directory, preserve the current data for rollback, then replace the app's data and restore its UID/GID before restarting. Stop Headplane too when restoring Headscale. Normal deployment never restores data.
 
 ## Kubernetes restore
 ```bash
