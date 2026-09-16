@@ -1,0 +1,43 @@
+services:
+  traefik:
+    image: traefik:v3.7.13
+    user: "10003:10003"
+    command:
+      - --configFile=/etc/traefik/traefik.yaml
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    mem_limit: 256m
+    networks:
+      - headscale
+      - uptime-kuma
+      - coredns
+    ports:
+      - "80:8080"
+      - "443:8443"
+    volumes:
+      - type: bind
+        source: ../config/traefik
+        target: /etc/traefik
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ../data/traefik
+        target: /data
+        read_only: false
+        bind:
+          create_host_path: false
+    healthcheck:
+      test:
+        - CMD
+        - traefik
+        - healthcheck
+        - --configFile=/etc/traefik/traefik.yaml
+      interval: 30s
+      timeout: 6s
+      start_period: 10s
+      retries: 3

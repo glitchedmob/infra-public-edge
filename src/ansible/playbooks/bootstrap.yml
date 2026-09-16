@@ -2,14 +2,24 @@
 - name: Bootstrap public edge node
   hosts: x86-vps-node-02
   become: true
+  gather_facts: false
   vars:
     deployment_directory: /opt/infra-public-edge
+  pre_tasks:
+    - name: Load SSH private key once
+      ansible.builtin.set_fact:
+        ansible_ssh_private_key: "{{ ansible_ssh_private_key }}"
+      no_log: true
+
+    - name: Gather host facts
+      ansible.builtin.setup:
   tasks:
-    - name: Install Docker repository dependencies
+    - name: Install bootstrap and deployment dependencies
       ansible.builtin.apt:
         name:
           - ca-certificates
           - python3-debian
+          - rsync
         state: present
         update_cache: true
         cache_valid_time: 3600

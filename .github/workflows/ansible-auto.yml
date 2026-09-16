@@ -6,11 +6,11 @@ on:
     paths:
       - src/ansible/playbooks/apply.yml
       - src/ansible/playbooks/manifests/**
+      - src/ansible/playbooks/deploy.yml
+      - src/ansible/playbooks/compose/**
       - .github/workflows/ansible-auto.yml
 
-# To switch to public SSH (e.g. during a from-scratch rebuild where Headscale is down):
-#   1. Set envrc_content: 'export EDGE_CONNECTION_MODE=public'
-#   2. Comment out headscale-login-server
+# Use public SSH until Tailscale connectivity is ready.
 
 permissions:
   contents: read
@@ -23,10 +23,12 @@ jobs:
       working-directory: src/ansible
       initialize-terraform: true
       terraform-working-directory: src/tf
-      trigger-map: '{"apply.yml": ["src/ansible/playbooks/apply.yml", "src/ansible/playbooks/manifests"]}'
-      headscale-login-server: https://headscale.levizitting.com
+      trigger-map: >-
+        {"apply.yml": ["src/ansible/playbooks/apply.yml", "src/ansible/playbooks/manifests"],
+         "deploy.yml": ["src/ansible/playbooks/deploy.yml", "src/ansible/playbooks/compose/"]}
+      headscale-login-server: ''
     secrets:
-      envrc_content: ''
+      envrc_content: 'export EDGE_CONNECTION_MODE=public'
       aws_role_arn: ${{ secrets.AWS_ROLE_ARN }}
       output_encryption_key: ${{ secrets.OUTPUT_ENCRYPTION_KEY }}
-      headscale_auth_key: ${{ secrets.HEADSCALE_AUTH_KEY }}
+      headscale_auth_key: ''

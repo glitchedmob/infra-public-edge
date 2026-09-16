@@ -1,0 +1,56 @@
+services:
+  headplane:
+    image: ghcr.io/tale/headplane:0.7.1
+    user: "10002:10002"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: 0.5
+    networks:
+      - headscale
+    depends_on:
+      headscale:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/bin/hp_healthcheck"]
+      interval: 10s
+      timeout: 6s
+      start_period: 30s
+      retries: 6
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=16m,mode=1777
+    volumes:
+      - type: bind
+        source: ../config/headplane
+        target: /etc/headplane
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ../secrets/headplane
+        target: /run/secrets/headplane
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ../config/headscale
+        target: /etc/headscale
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ../config/headscale-dns
+        target: /etc/headscale-dns
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ../data/headplane
+        target: /var/lib/headplane
+        read_only: false
+        bind:
+          create_host_path: false

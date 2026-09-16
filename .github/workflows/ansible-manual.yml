@@ -10,6 +10,7 @@ on:
         options:
           - base-os-updates.yml
           - bootstrap.yml
+          - deploy.yml
           - apply.yml
           - tailscale-headscale.yml
       connectivity-mode:

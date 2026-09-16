@@ -1,0 +1,16 @@
+name: infra-public-edge
+
+include:
+  - traefik/compose.yaml
+  - headscale/compose.yaml
+  - headplane/compose.yaml
+  - uptime-kuma/compose.yaml
+  - coredns/compose.yaml
+
+networks:
+  headscale:
+    # Keep IPv6 STUN traffic on IPv6 rather than an IPv6-to-IPv4 userland proxy.
+    enable_ipv6: true
+  uptime-kuma:
+  coredns:
+    enable_ipv6: true
