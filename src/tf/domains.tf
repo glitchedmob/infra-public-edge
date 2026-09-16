@@ -44,9 +44,9 @@ resource "cloudflare_dns_record" "node_02_aaaa" {
   ttl     = 300
 }
 
-resource "cloudflare_dns_record" "headscale_alias" {
+resource "cloudflare_dns_record" "public_edge_alias" {
   zone_id = data.cloudflare_zone.levizitting_com.id
-  name    = local.headscale_hostname
+  name    = "public-edge.${data.cloudflare_zone.levizitting_com.name}"
   type    = "CNAME"
   content = "${local.node_02_hostname}.${data.cloudflare_zone.levizitting_com.name}"
   comment = local.dns_record_comment
@@ -57,4 +57,14 @@ resource "cloudflare_dns_record" "headscale_alias" {
     cloudflare_dns_record.node_02_a,
     cloudflare_dns_record.node_02_aaaa,
   ]
+}
+
+resource "cloudflare_dns_record" "headscale_alias" {
+  zone_id = data.cloudflare_zone.levizitting_com.id
+  name    = local.headscale_hostname
+  type    = "CNAME"
+  content = cloudflare_dns_record.public_edge_alias.name
+  comment = local.dns_record_comment
+  proxied = false
+  ttl     = 300
 }
