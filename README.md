@@ -8,8 +8,7 @@ Provisions and operates the LZ public edge platform.
 
 ## Structure
 - `src/tf/`: Provisions Vultr compute/firewall, Cloudflare DNS records, and AWS SSM parameters.
-- `src/ansible/`: Host configuration and application deployment.
-- `src/compose/`: Docker Compose services and their configuration.
+- `src/ansible/`: Host configuration, application deployment, and Compose service definitions.
 - `src/k8s/`: Kubernetes manifests.
 
 ## Edge routing model

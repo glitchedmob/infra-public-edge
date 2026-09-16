@@ -29,7 +29,7 @@ jobs:
               - .github/workflows/ansible-lint.yml
               - .github/workflows/ci.yml
             compose:
-              - src/compose/**
+              - src/ansible/playbooks/files/deploy/**
               - .github/workflows/ci.yml
             k8s:
               - src/k8s/**
@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - run: docker compose -f src/compose/compose.yaml config --quiet
+      - run: docker compose -f src/ansible/playbooks/files/deploy/compose.yaml config --quiet
 
   terraform-validate:
     if: needs.changes.outputs.terraform == 'true'
