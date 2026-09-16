@@ -1,15 +1,9 @@
 .PHONY: help tf-init tf-plan tf-show tf-output tf-apply tf-validate tf-format tf-lint-fix tf-providers-lock \
-        ansible ansible-shell ansible-install ansible-inventory ansible-lint ansible-lint-fix \
-        cluster-access kubectl k9s restore
+        ansible ansible-shell ansible-install ansible-inventory ansible-lint ansible-lint-fix
 
 TF_DIR := src/tf
 ANSIBLE_DIR := src/ansible
 ENVRC := $(CURDIR)/.envrc
-LOCAL_DIR := $(CURDIR)/.local
-KUBECONFIG_PATH := $(LOCAL_DIR)/kube/infra-public-edge.yaml
-K9S_CONFIG_DIR := $(LOCAL_DIR)/k9s
-K9S_PLUGIN_DIR := $(K9S_CONFIG_DIR)/plugins
-FLUX_K9S_PLUGIN_URL := https://raw.githubusercontent.com/derailed/k9s/master/plugins/flux.yaml
 SHELL := bash
 
 help:
@@ -31,12 +25,6 @@ help:
 	@echo "  Shell command:     make ansible-shell HOST=host COMMAND='cmd' [ARGS='-v']"
 	@echo "  Lint:              make ansible-lint"
 	@echo "  Lint fix:          make ansible-lint-fix"
-	@echo ""
-	@echo "Local Kubernetes commands:"
-	@echo "  Setup local access: make cluster-access"
-	@echo "  kubectl helper:    make kubectl ARGS='get nodes'"
-	@echo "  k9s helper:        make k9s"
-	@echo "  Restore helper:    make restore APP=headscale [SNAPSHOT=<id>|DATE='2026-05-18']"
 
 # --- OpenTofu ---
 
@@ -82,7 +70,7 @@ ansible-install:
 	@cd $(ANSIBLE_DIR) && uv sync --locked && uv run ansible-galaxy collection install -r requirements.yml
 
 ansible-shell:
-	@[ -n "$(HOST)" ] || (echo "Error: HOST required (e.g., x86-node-01)" && exit 1)
+	@[ -n "$(HOST)" ] || (echo "Error: HOST required (e.g., x86-vps-node-02)" && exit 1)
 	@[ -n "$(COMMAND)" ] || (echo "Error: COMMAND required (e.g., 'uname -a')" && exit 1)
 	@source .envrc 2>/dev/null || true && cd $(ANSIBLE_DIR) && uv run ansible $(HOST) -m shell -a "$(COMMAND)" $(ARGS)
 
@@ -94,20 +82,3 @@ ansible-lint:
 
 ansible-lint-fix:
 	@cd $(ANSIBLE_DIR) && uv run ansible-lint --fix
-
-cluster-access:
-	@mkdir -p "$(dir $(KUBECONFIG_PATH))" "$(K9S_PLUGIN_DIR)"
-	@curl -fsSL "$(FLUX_K9S_PLUGIN_URL)" -o "$(K9S_PLUGIN_DIR)/flux.yaml"
-	@source .envrc 2>/dev/null || true && cd $(ANSIBLE_DIR) && uv run ansible-playbook playbooks/local-kubeconfig.yml -e kubeconfig_output_path="$(KUBECONFIG_PATH)"
-
-
-kubectl:
-	@KUBECONFIG="$(KUBECONFIG_PATH)" kubectl $(ARGS)
-
-k9s:
-	@KUBECONFIG="$(KUBECONFIG_PATH)" K9S_CONFIG_DIR="$(K9S_CONFIG_DIR)" k9s $(ARGS)
-
-restore:
-	@[ -n "$(APP)" ] || (echo "Error: APP required" && exit 1)
-	@if [ -n "$(SNAPSHOT)" ] && [ -n "$(DATE)" ]; then echo "Error: set only one of SNAPSHOT or DATE"; exit 1; fi
-	@KUBECONFIG="$(KUBECONFIG_PATH)" "$(CURDIR)/scripts/restore-app.sh" --app "$(APP)" $(if $(SNAPSHOT),--snapshot "$(SNAPSHOT)") $(if $(DATE),--date "$(DATE)")

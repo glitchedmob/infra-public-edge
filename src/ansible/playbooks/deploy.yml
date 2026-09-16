@@ -9,8 +9,8 @@
     headscale_hostname: headscale.levizitting.com
     uptime_kuma_hostname: uptime.levizitting.com
     acme_email: me@levizitting.com
-    # Keep the existing secret while moving applications off node 1.
-    ssm_cookie_secret_path: /homelab/x86-vps-node-01/headplane-cookie-secret
+    # Shared application secret; preserve the existing SSM path across node replacements.
+    ssm_headplane_cookie_secret_path: /homelab/x86-vps-node-01/headplane-cookie-secret
     compose_apps:
       - { name: traefik, uid: 10003 }
       - { name: headscale, uid: 10001, backup: true }
@@ -71,7 +71,7 @@
 
     - name: Install Headplane cookie secret
       ansible.builtin.copy:
-        content: "{{ lookup('amazon.aws.ssm_parameter', ssm_cookie_secret_path) }}"
+        content: "{{ lookup('amazon.aws.ssm_parameter', ssm_headplane_cookie_secret_path) }}"
         dest: "{{ deployment_directory }}/secrets/headplane/cookie_secret"
         owner: root
         group: "10002"

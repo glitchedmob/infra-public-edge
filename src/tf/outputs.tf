@@ -1,6 +1,6 @@
-output "ssm_cookie_secret_path" {
-  description = "SSM Parameter Store path for headplane cookie secret"
-  value       = aws_ssm_parameter.cookie_secret.name
+output "ssm_headplane_cookie_secret_path" {
+  description = "SSM Parameter Store path for the Headplane cookie secret"
+  value       = aws_ssm_parameter.headplane_cookie_secret.name
 }
 
 output "ssm_private_key_path" {
@@ -8,23 +8,23 @@ output "ssm_private_key_path" {
   value       = module.ssh_key.ssm_path
 }
 
-output "vps_hostname" {
-  description = "DNS hostname for the VPS"
-  value       = local.vps_fqdn
+output "node_02_fqdn" {
+  description = "Public DNS hostname for node 02"
+  value       = "${local.node_02_hostname}.${data.cloudflare_zone.levizitting_com.name}"
 }
 
-output "vps_tailscale_host" {
-  description = "Tailscale/MagicDNS hostname for the VPS"
-  value       = local.hostname
+output "node_02_tailscale_host" {
+  description = "Tailscale/MagicDNS hostname for node 02"
+  value       = local.node_02_hostname
 }
 
 output "ansible_user" {
   description = "Ansible SSH user for the VPS"
-  value       = local.user
+  value       = local.ssh_user
 }
 
 output "backup_bucket_name" {
-  description = "Backblaze B2 bucket name for cluster backups"
+  description = "Backblaze B2 bucket name for application backups"
   value       = b2_bucket.backups.bucket_name
 }
 
@@ -34,12 +34,12 @@ output "backup_bucket_name_ssm_path" {
 }
 
 output "backup_b2_account_id_ssm_path" {
-  description = "SSM Parameter Store path for the K8up B2 account ID"
+  description = "SSM Parameter Store path for the backup B2 account ID"
   value       = aws_ssm_parameter.b2_account_id.name
 }
 
 output "backup_b2_account_key_ssm_path" {
-  description = "SSM Parameter Store path for the K8up B2 account key"
+  description = "SSM Parameter Store path for the backup B2 account key"
   value       = aws_ssm_parameter.b2_account_key.name
 }
 
@@ -48,9 +48,4 @@ output "backup_restic_password_ssm_paths" {
   value = {
     for app, param in aws_ssm_parameter.restic_password : app => param.name
   }
-}
-
-output "external_secrets_role_arn" {
-  description = "IAM role ARN for the External Secrets controller"
-  value       = aws_iam_role.external_secrets.arn
 }
