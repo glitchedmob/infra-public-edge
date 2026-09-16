@@ -33,24 +33,6 @@ EDGE_CONNECTION_MODE=public make ansible PLAYBOOK=bootstrap.yml
 EDGE_CONNECTION_MODE=public make ansible PLAYBOOK=deploy.yml
 ```
 
-## Compose applications
-
-`deploy.yml` targets only `x86-vps-node-02`. It creates app-owned data directories, reads the existing Headplane cookie secret from SSM without logging it, renders configuration, and starts the Compose project in `/opt/infra-public-edge`. Run bootstrap first. Config and secret changes restart the affected services; Compose handles image and service-definition changes. Health checks live in Compose.
-
-The four services share a Docker bridge network. Only Traefik's HTTP/HTTPS ports and Headscale's UDP STUN port are published. Traefik uses file-based routing and HTTP-01 certificates, without Docker socket access. Headplane stays at `https://headscale.levizitting.com/admin`; Kuma stays at `https://uptime.levizitting.com`.
-
-All application processes run as non-root, with a read-only root filesystem, dropped capabilities, and `no-new-privileges`. Docker itself remains rootful, so this does not introduce rootless Docker's networking overhead. Data ownership is Headscale `10001:10001`, Headplane `10002:10002`, Traefik `10003:10003`, and Kuma `1000:1000`.
-
-- Headplane can administer Headscale through its API. Editing Headscale's configuration or DNS records stays in Ansible, not the UI.
-- Kuma permits ordinary ping through `ping_group_range`. It retains `NET_RAW` in the capability bounding set because the image's capability-marked ping binary otherwise fails to execute. The non-root Node process has no effective capabilities, and `no-new-privileges` prevents gaining them through execution. Its optional DNS cache cannot start its root helper; disable that setting in Kuma. Without the cache, repeated system-resolver lookups may cost more DNS traffic and latency. The slim image has no local browser, and this setup does not permit runtime package installation or Docker socket monitoring.
-- `restart: unless-stopped` restarts exited processes. Docker health checks mark unhealthy services but do not restart a process that is still running.
-
-This playbook does not migrate existing databases, change public DNS, or replace node 1's routing. HTTP-01 certificate issuance requires both public A and AAAA traffic to reach node 2. Until cutover, do not expect trusted certificates there. Preserve application data and Headscale identity keys during the later migration; deployment does not copy or reset them. Restored files must have the ownership listed above.
-
-Backups, DNS forwarding, zone forwarding, and Tailscale configuration are not part of this deployment yet. Node 1's Kubernetes files, `apply.yml`, and existing automation remain intact while it serves production. The manual workflow offers `deploy.yml`; new Compose changes do not trigger an automatic deployment.
-
-Check the Compose definitions locally with `docker compose -f src/compose/compose.yaml config --quiet`.
-
 ## Connectivity
 
 Ansible and GitHub Actions reach the edge node over Tailscale by default. The Terraform inventory exposes both `public_ssh_host` and `tailscale_ssh_host`, and `group_vars/all.yml` selects the target based on `EDGE_CONNECTION_MODE` (default: `tailscale`).
