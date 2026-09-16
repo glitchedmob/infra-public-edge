@@ -37,9 +37,6 @@
       vars:
         state: present
         tailscale_authkey: "{{ tailscale_authkey_value }}"
-        tailscale_tags:
-          - infra-public-edge
-        # DNS routing will be enabled after the private DNS listener is published.
         tailscale_args: >-
           --login-server={{ tailscale_login_server }}
           --hostname={{ inventory_hostname }}
