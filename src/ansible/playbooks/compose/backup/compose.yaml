@@ -1,0 +1,25 @@
+services:
+  backup:
+    image: ghcr.io/glitchedmob/restic-backup:1.0.1
+    command: [/bin/sh, /etc/backup-common/run.sh, schedule]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    stop_grace_period: 2m
+    mem_limit: 256m
+    cpus: 0.25
+    environment:
+      RESTIC_CACHE_DIR: /scratch/cache
+      GOMAXPROCS: "1"
+      GOMEMLIMIT: 192MiB
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=16m,mode=1777
+    volumes:
+      - type: bind
+        source: ../backup
+        target: /etc/backup-common
+        read_only: true
+        bind:
+          create_host_path: false

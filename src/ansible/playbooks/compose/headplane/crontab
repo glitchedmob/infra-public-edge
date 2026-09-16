@@ -1,0 +1,3 @@
+20 8 * * * /bin/sh /etc/backup-common/run.sh backup
+20 9 * * 1 /bin/sh /etc/backup-common/run.sh check
+20 10 * * 0 /bin/sh /etc/backup-common/run.sh prune

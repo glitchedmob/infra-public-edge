@@ -1,4 +1,36 @@
 services:
+  headplane-backup:
+    extends:
+      file: ../backup/compose.yaml
+      service: backup
+    user: "10002:10002"
+    environment:
+      BACKUP_APP: headplane
+    volumes:
+      - type: bind
+        source: .
+        target: /etc/backup
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ../data/headplane
+        target: /source
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ../secrets/backups/headplane
+        target: /run/secrets/backup
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /var/lib/infra-public-edge-backups/headplane
+        target: /scratch
+        bind:
+          create_host_path: false
+
   headplane:
     image: ghcr.io/tale/headplane:0.7.1
     user: "10002:10002"
