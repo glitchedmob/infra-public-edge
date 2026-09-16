@@ -13,11 +13,13 @@
     ssm_cookie_secret_path: /homelab/x86-vps-node-01/headplane-cookie-secret
     compose_apps:
       - { name: traefik, uid: 10003 }
-      - { name: headscale, uid: 10001 }
-      - { name: headplane, uid: 10002 }
-      - { name: uptime-kuma, uid: 1000 }
+      - { name: headscale, uid: 10001, backup: true }
+      - { name: headplane, uid: 10002, backup: true }
+      - { name: uptime-kuma, uid: 1000, backup: true }
       - { name: coredns }
     compose_service_names: "{{ compose_apps | map(attribute='name') | list }}"
+    backup_apps: "{{ compose_apps | selectattr('backup', 'defined') | selectattr('backup') | list }}"
+    ssm_backup_prefix: /homelab/public-edge/backups
   module_defaults:
     community.docker.docker_compose_v2:
       project_src: "{{ deployment_directory }}"
@@ -27,6 +29,24 @@
     - name: Load SSH private key once
       ansible.builtin.set_fact:
         ansible_ssh_private_key: "{{ ansible_ssh_private_key }}"
+      no_log: true
+
+    - name: Load backup credentials once
+      ansible.builtin.set_fact:
+        backup_parameters: "{{ lookup('amazon.aws.ssm_parameter', ssm_backup_prefix, bypath=true, recursive=true) }}"
+      no_log: true
+
+    - name: Require configured backup credentials
+      ansible.builtin.assert:
+        that:
+          - parameter_value | trim | length > 0
+          - parameter_value | trim != 'CHANGEME'
+        fail_msg: "Set SSM parameter {{ ssm_backup_prefix }}/{{ item }} before deploying"
+      vars:
+        parameter_value: "{{ backup_parameters.get(ssm_backup_prefix ~ '/' ~ item, '') }}"
+      loop: >-
+        {{ ['bucket-name', 'b2-account-id', 'b2-account-key'] +
+           (backup_apps | map(attribute='name') | map('regex_replace', '$', '/restic-password') | list) }}
       no_log: true
   tasks:
     - name: Create application data directories
@@ -61,6 +81,43 @@
       diff: false
       notify: Restart headplane
 
+    - name: Create private backup scratch directories outside the deployment tree
+      ansible.builtin.file:
+        path: "/var/lib/infra-public-edge-backups/{{ item.name }}"
+        state: directory
+        owner: "{{ item.uid }}"
+        group: "{{ item.uid }}"
+        mode: "0700"
+      loop: "{{ backup_apps }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Create backup secret directories
+      ansible.builtin.file:
+        path: "{{ deployment_directory }}/secrets/backups/{{ item.name }}"
+        state: directory
+        owner: root
+        group: "{{ item.uid }}"
+        mode: "0750"
+      loop: "{{ backup_apps }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Install per-application backup credentials
+      ansible.builtin.copy:
+        content: |
+          RESTIC_REPOSITORY={{ ('b2:' ~ backup_parameters[ssm_backup_prefix ~ '/bucket-name'] ~ ':' ~ item.name) | quote }}
+          B2_ACCOUNT_ID={{ backup_parameters[ssm_backup_prefix ~ '/b2-account-id'] | quote }}
+          B2_ACCOUNT_KEY={{ backup_parameters[ssm_backup_prefix ~ '/b2-account-key'] | quote }}
+          RESTIC_PASSWORD={{ backup_parameters[ssm_backup_prefix ~ '/' ~ item.name ~ '/restic-password'] | quote }}
+        dest: "{{ deployment_directory }}/secrets/backups/{{ item.name }}/backup.env"
+        owner: root
+        group: "{{ item.uid }}"
+        mode: "0440"
+      loop: "{{ backup_apps }}"
+      no_log: true
+      diff: false
+
     - name: Stage and sync deployment files
       block:
         - name: Build local deployment tree
@@ -83,7 +140,7 @@
                 state: directory
                 mode: "0755"
               loop: >-
-                {{ compose_service_names + ['config/traefik/dynamic', 'config/headscale',
+                {{ compose_service_names + ['backup', 'config/traefik/dynamic', 'config/headscale',
                    'config/headscale-dns', 'config/headplane', 'config/coredns'] }}
               changed_when: false
 
@@ -92,7 +149,22 @@
                 src: "{{ compose_source }}/{{ item }}"
                 dest: "{{ compose_staging.path }}/{{ item }}"
                 mode: "0644"
-              loop: "{{ ['compose.yaml'] + (compose_service_names | map('regex_replace', '$', '/compose.yaml') | list) }}"
+              loop: "{{ ['compose.yaml', 'backup/compose.yaml'] + (compose_service_names | map('regex_replace', '$', '/compose.yaml') | list) }}"
+              changed_when: false
+
+            - name: Stage backup scripts and schedules
+              ansible.builtin.copy:
+                src: "{{ compose_source }}/{{ item }}"
+                dest: "{{ compose_staging.path }}/{{ item }}"
+                mode: "0644"
+              loop:
+                - backup/run.sh
+                - headscale/backup.sh
+                - headscale/crontab
+                - headplane/backup.sh
+                - headplane/crontab
+                - uptime-kuma/backup.sh
+                - uptime-kuma/crontab
               changed_when: false
 
             - name: Render application configuration locally
@@ -157,6 +229,21 @@
         remove_orphans: true
 
   handlers:
+    - name: Restart backup services when scripts or schedules change
+      listen: Apply configuration changes
+      community.docker.docker_compose_v2:
+        state: present
+        recreate: always
+        services: ["{{ item.name }}-backup"]
+        dependencies: false
+      loop: "{{ backup_apps }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: >-
+        ' backup/' in compose_sync.msg or
+        ' ' ~ item.name ~ '/backup.sh' in compose_sync.msg or
+        ' ' ~ item.name ~ '/crontab' in compose_sync.msg
+
     - name: Restart coredns
       listen: Apply configuration changes
       community.docker.docker_compose_v2:
