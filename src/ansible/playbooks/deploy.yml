@@ -22,6 +22,11 @@
       project_src: "{{ deployment_directory }}"
       wait: true
       wait_timeout: 180
+  pre_tasks:
+    - name: Load SSH private key once
+      ansible.builtin.set_fact:
+        ansible_ssh_private_key: "{{ ansible_ssh_private_key }}"
+      no_log: true
   tasks:
     - name: Create Compose service directories
       ansible.builtin.file:
