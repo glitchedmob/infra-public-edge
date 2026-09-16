@@ -1,4 +1,5 @@
 locals {
+  vultr_2_cpu_2_gb_ram      = "vc2-2c-2gb"
   vultr_2_cpu_4_gb_ram      = "vc2-2c-4gb"
   vultr_debian_13_x64_os_id = 2625
   firewall_rules = [
@@ -8,6 +9,10 @@ locals {
     { protocol = "udp", port = "3478", ip_types = ["v4", "v6"], notes = "Allow DERP" },
     { protocol = "tcp", port = "3478", ip_types = ["v4", "v6"], notes = "Allow DERP" },
   ]
+  node_02_hostname = "x86-vps-node-02"
+  node_02_firewall_rules = distinct(concat(local.firewall_rules, [
+    { protocol = "tcp", port = "22", ip_types = ["v4", "v6"], notes = "Allow SSH" },
+  ]))
   user                         = "admin"
   ipv6_normalized              = cidrhost("${vultr_instance.this.v6_main_ip}/128", 0)
   dns_record_comment           = "managedBy=tf,repo=glitchedmob/infra-public-edge"
@@ -98,6 +103,65 @@ resource "vultr_instance" "this" {
     ssh_keys = [module.ssh_key.public_key]
     user     = local.user
   })
+}
+
+resource "vultr_firewall_group" "node_02" {
+  description = "${local.node_02_hostname} firewall group"
+}
+
+resource "vultr_firewall_rule" "node_02" {
+  for_each = {
+    for rule in flatten([
+      for rule in local.node_02_firewall_rules : [
+        for ip_type in rule.ip_types : {
+          key         = "${ip_type}-${rule.protocol}-${rule.port}"
+          protocol    = rule.protocol
+          port        = rule.port
+          ip_type     = ip_type
+          notes       = rule.notes
+          subnet      = ip_type == "v4" ? "0.0.0.0" : "::"
+          subnet_size = 0
+        }
+      ]
+    ]) : rule.key => rule
+  }
+
+  firewall_group_id = vultr_firewall_group.node_02.id
+  protocol          = each.value.protocol
+  port              = each.value.port
+  ip_type           = each.value.ip_type
+  notes             = each.value.notes
+  subnet            = each.value.subnet
+  subnet_size       = each.value.subnet_size
+}
+
+resource "vultr_instance" "node_02" {
+  plan              = local.vultr_2_cpu_2_gb_ram
+  region            = var.vultr_region
+  os_id             = local.vultr_debian_13_x64_os_id
+  label             = local.node_02_hostname
+  hostname          = local.node_02_hostname
+  enable_ipv6       = true
+  backups           = "disabled"
+  ddos_protection   = false
+  firewall_group_id = vultr_firewall_group.node_02.id
+  user_data = templatefile("${path.module}/cloud-config.yml.tftpl", {
+    ssh_keys = [module.ssh_key.public_key]
+    user     = local.user
+  })
+}
+
+resource "ansible_host" "node_02" {
+  name = local.node_02_hostname
+  variables = {
+    # Use public SSH until this node is enrolled in Headscale.
+    ansible_host         = vultr_instance.node_02.main_ip
+    ansible_user         = local.user
+    public_ssh_host      = vultr_instance.node_02.main_ip
+    public_ipv4          = vultr_instance.node_02.main_ip
+    public_ipv6          = vultr_instance.node_02.v6_main_ip
+    ssm_private_key_path = module.ssh_key.ssm_path
+  }
 }
 
 resource "ansible_host" "this" {
