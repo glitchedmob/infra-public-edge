@@ -1,42 +1,22 @@
 ---
-- name: Resolve the requested snapshot in the application's repository
+- name: Resolve the requested snapshot using the backup container
   ansible.builtin.command:
-    argv:
-      - docker
-      - compose
-      - run
-      - --rm
-      - --no-deps
-      - -T
-      - "{{ restore_app.name }}-backup"
-      - resticprofile
-      - --stderr
-      - snapshots
-      - --json
-      - "{{ restore_app.snapshot }}"
+    argv: [docker, compose, run, --rm, --no-deps, -T, "{{ restore_app }}-backup", resticprofile, --stderr, snapshots, --json, "{{ restore_snapshot }}"]
     chdir: "{{ deployment_directory }}"
-  register: restore_snapshot_listing
+  register: restore_listing
   changed_when: false
 
-- name: Require exactly one matching snapshot
+- name: Require one matching snapshot
   ansible.builtin.assert:
     that:
-      - restore_snapshot_listing.stdout | from_json | length == 1
-      - (restore_snapshot_listing.stdout | from_json | first).id is match('^[0-9a-f]{64}$')
-    fail_msg: "Expected one snapshot for {{ restore_app.name }}:{{ restore_app.snapshot }}."
+      - restore_listing.stdout | from_json | length == 1
+      - (restore_listing.stdout | from_json | first).id is match('^[0-9a-f]{64}$')
 
-- name: Pin the resolved snapshot
+- name: Pin the selected snapshot
   ansible.builtin.set_fact:
-    restore_plan: >-
-      {{ restore_plan + [{'name': restore_app.name,
-         'snapshot': (restore_snapshot_listing.stdout | from_json | first).id,
-         'time': (restore_snapshot_listing.stdout | from_json | first).time}] }}
+    restore_plan: "{{ restore_plan + [{'name': restore_app, 'snapshot': (restore_listing.stdout | from_json | first).id}] }}"
 
-- name: Show the selected snapshot
-  ansible.builtin.debug:
-    msg: "{{ restore_plan | last }}"
-
-- name: Download the archive without touching application data
+- name: Download, extract, and check the backup inside its existing container image
   ansible.builtin.command:
     argv:
       - docker
@@ -45,32 +25,35 @@
       - --rm
       - --no-deps
       - -T
-      - "{{ restore_app.name }}-backup"
-      - resticprofile
-      - restore
+      - "{{ restore_app }}-backup"
+      - sh
+      - -ec
+      - |
+        umask 077
+        resticprofile restore "$1" --target "$2" --verify
+        mkdir -m 700 "$2/data"
+        tar -x -o --no-same-permissions -f "$2/$3-backup.tar" -C "$2/data"
+        test -z "$(find "$2/data" ! -type f ! -type d -print)"
+        test -s "$2/data/$4"
+        for suffix in -wal -shm -journal; do test ! -e "$2/data/$4$suffix"; done
+        test "$(sqlite3 -readonly -bail "$2/data/$4" 'PRAGMA integrity_check;')" = ok
+        if [ "$3" = headscale ]; then
+          test -s "$2/data/noise_private.key"
+          test -s "$2/data/derp_server_private.key"
+        fi
+      - --
       - "{{ (restore_plan | last).snapshot }}"
-      - --target
       - "/scratch/restore/{{ restore_workspace.path | basename }}"
-      - --verify
+      - "{{ restore_app }}"
+      - "{{ restore_databases[restore_app] }}"
     chdir: "{{ deployment_directory }}"
   changed_when: true
 
-- name: Extract and validate the archive in a separate data directory
-  ansible.builtin.script:
-    cmd: >-
-      {{ (['files/restore-archive.py',
-           backup_scratch_directory ~ '/' ~ restore_app.name ~ '/restore/' ~
-           (restore_workspace.path | basename) ~ '/' ~ restore_app.name ~ '-backup.tar',
-           restore_workspace.path ~ '/' ~ restore_app.name,
-           restore_catalog[restore_app.name].database] +
-          restore_catalog[restore_app.name].required_files) | map('quote') | join(' ') }}
-    executable: python3
+- name: Stage validated data with the backup container's application ownership
+  ansible.builtin.command:
+    argv:
+      - mv
+      - --
+      - "{{ backup_scratch_directory }}/{{ restore_app }}/restore/{{ restore_workspace.path | basename }}/data"
+      - "{{ restore_workspace.path }}/{{ restore_app }}"
   changed_when: true
-
-- name: Set restored data ownership
-  ansible.builtin.file:
-    path: "{{ restore_workspace.path }}/{{ restore_app.name }}"
-    state: directory
-    owner: "{{ restore_catalog[restore_app.name].uid }}"
-    group: "{{ restore_catalog[restore_app.name].uid }}"
-    recurse: true

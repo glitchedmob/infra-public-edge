@@ -3,15 +3,15 @@
   hosts: x86-vps-node-02
   become: true
   gather_facts: false
-  vars_files:
-    - vars/restore-applications.yml
   vars:
     deployment_directory: /opt/infra-public-edge
     backup_scratch_directory: /var/lib/infra-public-edge-backups
-    restore_selected_names: "{{ restore_selections | map(attribute='name') | list }}"
-    restore_affected_apps: >-
-      {{ (restore_selected_names + (['headplane'] if 'headscale' in restore_selected_names else [])) | unique | list }}
-    restore_backup_services: "{{ restore_affected_apps | map('regex_replace', '$', '-backup') | list }}"
+    restore_databases: { headscale: db.sqlite, headplane: hp_persist.db, uptime-kuma: kuma.db }
+    restore_entries: "{{ restore_apps.split(',') | map('trim') | list }}"
+    restore_names: "{{ restore_entries | map('regex_replace', ':.*$', '') | list }}"
+    restore_affected: "{{ (restore_names + (['headplane'] if 'headscale' in restore_names else [])) | unique | list }}"
+    restore_backups: "{{ restore_affected | map('regex_replace', '$', '-backup') | list }}"
+    restore_containers: "{{ restore_status.stdout_lines | map('from_json') | list }}"
   module_defaults:
     community.docker.docker_compose_v2:
       project_src: "{{ deployment_directory }}"
@@ -19,13 +19,23 @@
       wait: true
       wait_timeout: 180
   pre_tasks:
-    - name: Parse and validate restore selections before contacting the node
-      ansible.builtin.import_tasks: tasks/restore/parse.yml
-
-    - name: Reject check mode for the restore operation
+    - name: Require restore selections and reject check mode
       ansible.builtin.assert:
-        that: not ansible_check_mode
-        fail_msg: "Restore does not support --check. No data has been changed."
+        that:
+          - restore_apps is defined
+          - restore_apps is string
+          - restore_apps | trim | length > 0
+          - not ansible_check_mode
+        fail_msg: "Supply -e restore_apps=app[:snapshot],app[:snapshot]. Restore does not support --check."
+
+    - name: Validate application and snapshot selections
+      ansible.builtin.assert:
+        that:
+          - item is match('^[a-z0-9-]+(?::(?:latest|[0-9a-fA-F]{8,64}))?$')
+          - item.split(':')[0] in restore_databases
+          - restore_names | unique | length == restore_names | length
+        fail_msg: "Invalid selection '{{ item }}'. Use each supported app once, optionally followed by :latest or :snapshot-id."
+      loop: "{{ restore_entries }}"
 
     - name: Load SSH private key once
       ansible.builtin.set_fact:
@@ -33,44 +43,38 @@
       when: ssm_private_key_path is defined
       no_log: true
 
-    - name: Read current application and backup container states
+    - name: Read existing container states
       ansible.builtin.command:
         argv: [docker, compose, ps, --all, --format, json]
         chdir: "{{ deployment_directory }}"
-      register: restore_container_status
+      register: restore_status
       changed_when: false
 
-    - name: Record existing containers
-      ansible.builtin.set_fact:
-        restore_containers: "{{ restore_container_status.stdout_lines | map('from_json') | list }}"
-
-    - name: Require an already-deployed application and backup service
+    - name: Require deployed applications and backup services
       ansible.builtin.assert:
         that: item in restore_containers | map(attribute='Service') | list
-        fail_msg: "Missing container for {{ item }}. Run deployment before restoring applications."
-      loop: "{{ restore_affected_apps + restore_backup_services }}"
+        fail_msg: "Missing container for {{ item }}. Deploy before restoring."
+      loop: "{{ restore_affected + restore_backups }}"
 
-    - name: Remember which services were running
+    - name: Record running services and initialize the restore plan
       ansible.builtin.set_fact:
-        restore_running_services: >-
-          {{ restore_containers | selectattr('State', 'equalto', 'running') | map(attribute='Service') | list }}
+        restore_running: "{{ restore_containers | selectattr('State', 'equalto', 'running') | map(attribute='Service') | list }}"
         restore_plan: []
-        restore_cutover_started: false
+        restore_cutover: false
 
-    - name: Inspect current data directories
+    - name: Inspect live data directories
       ansible.builtin.stat:
         path: "{{ deployment_directory }}/data/{{ item }}"
         follow: false
-      loop: "{{ restore_selected_names }}"
-      register: restore_data_directories
+      loop: "{{ restore_names }}"
+      register: restore_directories
 
-    - name: Require real application data directories
+    - name: Require existing non-symlink data directories
       ansible.builtin.assert:
         that:
           - item.stat.isdir | default(false)
           - not (item.stat.islnk | default(false))
-        fail_msg: "Expected a data directory for {{ item.item }}. Run deployment before restoring applications."
-      loop: "{{ restore_data_directories.results }}"
+      loop: "{{ restore_directories.results }}"
       loop_control:
         label: "{{ item.item }}"
 
@@ -82,96 +86,93 @@
         prefix: .restore-
       register: restore_workspace
 
-    - name: Prepare and restore application data
+    - name: Restore application data
       block:
-        - name: Stop affected backup schedulers
+        - name: Pause affected backup schedulers
           community.docker.docker_compose_v2:
             state: stopped
             wait: false
-            services: "{{ restore_backup_services }}"
+            services: "{{ restore_backups }}"
 
-        - name: Download and validate every requested backup before stopping applications
+        - name: Prepare every backup before stopping applications
           ansible.builtin.include_tasks: tasks/restore/prepare.yml
-          loop: "{{ restore_selections }}"
+          vars:
+            restore_app: "{{ selection.split(':')[0] }}"
+            restore_snapshot: "{{ selection.split(':')[1] | default('latest') | lower }}"
+          loop: "{{ restore_entries }}"
           loop_control:
-            loop_var: restore_app
-            label: "{{ restore_app.name }}:{{ restore_app.snapshot }}"
+            loop_var: selection
 
-        - name: Show the resolved restore plan
+        - name: Show resolved snapshots and begin cutover
           ansible.builtin.debug:
             var: restore_plan
 
-        - name: Mark the beginning of the application maintenance window
+        - name: Mark cutover started
           ansible.builtin.set_fact:
-            restore_cutover_started: true
+            restore_cutover: true
 
         - name: Stop affected applications including Headplane when restoring Headscale
           community.docker.docker_compose_v2:
             state: stopped
             wait: false
-            services: "{{ restore_affected_apps }}"
+            services: "{{ restore_affected }}"
 
-        - name: Replace application directories while preserving the original data
-          ansible.builtin.include_tasks: tasks/restore/install.yml
-          loop: "{{ restore_plan }}"
-          loop_control:
-            loop_var: restore_app
-            label: "{{ restore_app.name }}"
+        - name: Preserve original data for rollback
+          ansible.builtin.command:
+            argv: [mv, --, "{{ deployment_directory }}/data/{{ item }}", "{{ restore_workspace.path }}/previous-{{ item }}"]
+          loop: "{{ restore_names }}"
+          changed_when: true
+
+        - name: Install restored data
+          ansible.builtin.command:
+            argv: [mv, --, "{{ restore_workspace.path }}/{{ item }}", "{{ deployment_directory }}/data/{{ item }}"]
+          loop: "{{ restore_names }}"
+          changed_when: true
 
         - name: Recreate applications and check health in dependency order
           community.docker.docker_compose_v2:
             state: present
             recreate: always
             services: ["{{ item }}"]
-          loop: "{{ restore_catalog.keys() | list }}"
-          when: >-
-            item in restore_selected_names or
-            (item in restore_affected_apps and item in restore_running_services)
+          loop: "{{ restore_databases.keys() | list }}"
+          when: item in restore_names or (item in restore_affected and item in restore_running)
 
-        - name: Recreate previously running backup schedulers with the restored data mounts
+        - name: Recreate previously running backup schedulers
           community.docker.docker_compose_v2:
             state: present
             recreate: always
-            services: "{{ restore_backup_services | intersect(restore_running_services) }}"
-          when: restore_backup_services | intersect(restore_running_services) | length > 0
+            services: "{{ restore_backups | intersect(restore_running) }}"
+          when: restore_backups | intersect(restore_running) | length > 0
 
       rescue:
         - name: Keep affected services stopped after a cutover failure
           community.docker.docker_compose_v2:
             state: stopped
             wait: false
-            services: "{{ restore_affected_apps + restore_backup_services }}"
-          when: restore_cutover_started
-          register: restore_stop_result
+            services: "{{ restore_affected + restore_backups }}"
+          when: restore_cutover
           failed_when: false
 
-        - name: Resume previously running backups when application data was not changed
+        - name: Resume previous backup schedulers if live data was not changed
           community.docker.docker_compose_v2:
             state: present
-            services: "{{ restore_backup_services | intersect(restore_running_services) }}"
-          when:
-            - not restore_cutover_started
-            - restore_backup_services | intersect(restore_running_services) | length > 0
+            services: "{{ restore_backups | intersect(restore_running) }}"
+          when: not restore_cutover and restore_backups | intersect(restore_running) | length > 0
 
-        - name: Report the failed restore and recovery location
+        - name: Report the failure and recovery location
           ansible.builtin.fail:
             msg: >-
-              Restore failed: {{ ansible_failed_result.msg | default('See the failed task above.') }}
-              {{ 'Cutover began; affected apps and backups were requested to stop. Verify their state before recovery.'
-                 if restore_cutover_started else 'Applications and their live data were not changed.' }}
-              Staged data and any previous-<app> rollback directories are in {{ restore_workspace.path }}.
-              Do not resume backups or deploy over a failed cutover until the application data is verified.
+              Restore failed: {{ ansible_failed_result.msg | default('See the failed task.') }}
+              {{ 'Cutover began; verify affected services are stopped before recovery.' if restore_cutover
+                 else 'Live application data was not changed.' }}
+              Staged data and previous-<app> rollback directories are in {{ restore_workspace.path }}.
 
-    - name: Remove downloaded archives after successful recovery
+    - name: Remove downloaded archives after success
       ansible.builtin.file:
         path: "{{ backup_scratch_directory }}/{{ item }}/restore/{{ restore_workspace.path | basename }}"
         state: absent
-      loop: "{{ restore_selected_names }}"
+      loop: "{{ restore_names }}"
 
-    - name: Report restored snapshots and preserved data
+    - name: Report recovery location
       ansible.builtin.debug:
-        msg:
-          restored: "{{ restore_plan }}"
-          health: "Restored applications passed their Compose health checks."
-          rollback_directory: "{{ restore_workspace.path }}"
-          rollback_note: "Original data is in previous-<app> directories. Keep it until application contents have been verified."
+        msg: "Restored apps passed health checks. Original data is in {{ restore_workspace.path }}/previous-<app>."
