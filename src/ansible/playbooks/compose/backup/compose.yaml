@@ -3,8 +3,14 @@ services:
     image: ghcr.io/glitchedmob/restic-backup:1.0.0@sha256:a53715a1371eb1d732945d08c06ce14842a6ef3e6e966905c4f45a5f9c32f885
     # One scheduler or one-off container owns the workspace at a time.
     entrypoint: [flock, -n, /scratch/container.lock]
-    # Keep backups idle until data restoration and server cutover are complete.
-    command: [sleep, infinity]
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        umask 077
+        rm -rf /scratch/snapshot
+        resticprofile schedule
+        exec supercronic /scratch/crontab
     read_only: true
     cap_drop: [ALL]
     security_opt:
