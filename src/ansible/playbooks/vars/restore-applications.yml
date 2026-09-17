@@ -1,0 +1,14 @@
+---
+restore_catalog:
+  headscale:
+    uid: 10001
+    database: db.sqlite
+    required_files: [noise_private.key, derp_server_private.key]
+  headplane:
+    uid: 10002
+    database: hp_persist.db
+    required_files: []
+  uptime-kuma:
+    uid: 1000
+    database: kuma.db
+    required_files: []

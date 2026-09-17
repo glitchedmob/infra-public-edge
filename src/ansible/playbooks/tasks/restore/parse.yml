@@ -1,0 +1,34 @@
+---
+- name: Require application selections
+  ansible.builtin.assert:
+    that:
+      - restore_apps is defined
+      - restore_apps is string
+      - restore_apps | trim | length > 0
+    fail_msg: "Supply -e restore_apps=app[:snapshot],app[:snapshot]. Snapshots default to latest."
+
+- name: Split application selections
+  ansible.builtin.set_fact:
+    restore_entries: "{{ restore_apps.split(',') | map('trim') | list }}"
+    restore_selections: []
+
+- name: Validate each application and snapshot
+  ansible.builtin.assert:
+    that:
+      - item is match('^[a-z0-9-]+(?::(?:latest|[0-9a-fA-F]{8,64}))?$')
+      - item.split(':')[0] in restore_catalog
+    fail_msg: "Invalid restore selection '{{ item }}'. Use a supported app with an optional :latest or :snapshot-id."
+  loop: "{{ restore_entries }}"
+
+- name: Normalize application selections
+  ansible.builtin.set_fact:
+    restore_selections: >-
+      {{ restore_selections + [{'name': item.split(':')[0],
+         'snapshot': (item.split(':')[1] | lower) if ':' in item else 'latest'}] }}
+  loop: "{{ restore_entries }}"
+
+- name: Reject duplicate applications
+  ansible.builtin.assert:
+    that:
+      - restore_selections | map(attribute='name') | unique | length == restore_selections | length
+    fail_msg: "Select each application only once."

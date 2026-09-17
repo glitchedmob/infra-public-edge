@@ -36,6 +36,10 @@ make ansible PLAYBOOK=deploy.yml
 make ansible PLAYBOOK=tailscale-headscale.yml
 ```
 
+## Restore applications
+
+Run `make ansible PLAYBOOK=restore-application.yml ARGS='-e restore_apps=headscale:58ba826d,headplane:latest,uptime-kuma'`; each entry is `app[:snapshot]`, defaulting to the latest snapshot. Restores retain the previous data for rollback; do not run concurrent restores or deployments.
+
 ## Connectivity
 
 Ansible and manual GitHub Actions runs reach the edge node over Tailscale by default. Automated deployments always use Tailscale. The Terraform inventory exposes both `public_ssh_host` and `tailscale_ssh_host`, and `group_vars/all.yml` selects the target based on `EDGE_CONNECTION_MODE` (default: `tailscale`).
