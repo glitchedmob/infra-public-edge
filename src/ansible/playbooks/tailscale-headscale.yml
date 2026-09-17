@@ -31,13 +31,16 @@
         tailscale_authkey_value: "{{ lookup('amazon.aws.aws_ssm', ssm_tailscale_authkey_path) }}"
       no_log: true
 
-    - name: Enable IPv4 forwarding for the private DNS route
+    - name: Enable forwarding for exit-node traffic and the private DNS route
       ansible.posix.sysctl:
-        name: net.ipv4.ip_forward
+        name: "{{ item }}"
         value: "1"
         sysctl_file: /etc/sysctl.d/99-public-edge-routing.conf
         sysctl_set: true
         state: present
+      loop:
+        - net.ipv4.ip_forward
+        - net.ipv6.conf.all.forwarding
 
     - name: Install and configure Tailscale
       ansible.builtin.include_role:
@@ -51,3 +54,4 @@
           --accept-routes
           --accept-dns=false
           --advertise-routes=10.255.255.1/32
+          --advertise-exit-node
