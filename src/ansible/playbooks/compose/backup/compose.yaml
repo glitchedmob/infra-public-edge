@@ -1,8 +1,15 @@
 services:
   backup:
     image: ghcr.io/glitchedmob/restic-backup:1.0.0@sha256:a53715a1371eb1d732945d08c06ce14842a6ef3e6e966905c4f45a5f9c32f885
-    # One scheduler or one-off container owns the workspace at a time.
-    entrypoint: [flock, -n, /scratch/container.lock]
+    # Keep the workspace locked without a parent process swallowing SIGTERM.
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        exec 9>/scratch/container.lock
+        flock -n 9
+        exec "$$@"
+      - --
     command:
       - /bin/sh
       - -ec
