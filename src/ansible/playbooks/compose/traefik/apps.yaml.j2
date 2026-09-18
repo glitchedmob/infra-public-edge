@@ -1,5 +1,23 @@
 http:
   routers:
+    lz-http-forward:
+      entryPoints: [web]
+      rule: >-
+        HostRegexp(`^([a-z0-9-]+\.)*levizitting\.com$`)
+        && !Host({{ headscale_hostname | to_json }})
+        && !Host({{ uptime_kuma_hostname | to_json }})
+        && !Host(`k8s-oidc-edge.levizitting.com`)
+        && !Host(`levizitting.com`)
+      priority: 100
+      service: lz-ingress
+    sgfdevs-http-forward:
+      entryPoints: [web]
+      rule: >-
+        HostRegexp(`^([a-z0-9-]+\.)*sgf\.dev$`)
+        || HostRegexp(`^([a-z0-9-]+\.)*methodconf\.com$`)
+        || HostRegexp(`^([a-z0-9-]+\.)*hack4goodsgf\.com$`)
+      priority: 100
+      service: sgfdevs-ingress
     headscale:
       rule: {{ ('Host(' ~ (headscale_hostname | to_json) ~ ')') | to_json }}
       priority: 10
@@ -33,6 +51,16 @@ http:
           True-Client-IP: ""
 
   services:
+    lz-ingress:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: http://lz-k3s.levizitting.com:80
+    sgfdevs-ingress:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: http://sgfdevs-k3s.levizitting.com:80
     headscale:
       loadBalancer:
         servers:
@@ -48,11 +76,39 @@ http:
 
 tcp:
   routers:
+    lz-https-passthrough:
+      entryPoints: [websecure]
+      rule: >-
+        HostSNIRegexp(`^([a-z0-9-]+\.)*levizitting\.com$`)
+        && !HostSNI({{ headscale_hostname | to_json }})
+        && !HostSNI({{ uptime_kuma_hostname | to_json }})
+        && !HostSNI(`k8s-oidc-edge.levizitting.com`)
+        && !HostSNI(`levizitting.com`)
+      service: lz-ingress
+      tls:
+        passthrough: true
+    sgfdevs-https-passthrough:
+      entryPoints: [websecure]
+      rule: >-
+        HostSNIRegexp(`^([a-z0-9-]+\.)*sgf\.dev$`)
+        || HostSNIRegexp(`^([a-z0-9-]+\.)*methodconf\.com$`)
+        || HostSNIRegexp(`^([a-z0-9-]+\.)*hack4goodsgf\.com$`)
+      service: sgfdevs-ingress
+      tls:
+        passthrough: true
     coredns:
       entryPoints: [dns-tcp]
       rule: HostSNI(`*`)
       service: coredns
   services:
+    lz-ingress:
+      loadBalancer:
+        servers:
+          - address: lz-k3s.levizitting.com:443
+    sgfdevs-ingress:
+      loadBalancer:
+        servers:
+          - address: sgfdevs-k3s.levizitting.com:443
     coredns:
       loadBalancer:
         servers:
