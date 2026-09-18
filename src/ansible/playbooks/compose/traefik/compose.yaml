@@ -17,12 +17,9 @@ services:
     networks:
       - headscale
       - uptime-kuma
-      - coredns
     ports:
       - "80:8080"
       - "443:8443"
-      - "10.255.255.1:53:1053/tcp"
-      - "10.255.255.1:53:1053/udp"
     volumes:
       - type: bind
         source: ../config/traefik

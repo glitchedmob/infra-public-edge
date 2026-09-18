@@ -19,7 +19,7 @@ Provisions and operates the LZ public edge platform.
 ## DNS model
 - Two DNS paths exist for `*.levizitting.com`: **public** (Cloudflare, for internet clients) and **Tailscale split-DNS** (edge CoreDNS, for tailnet clients).
 - Public records are managed in [`glitchedmob/infra-dns`](https://github.com/glitchedmob/infra-dns); this repo owns the edge node A/AAAA records and the `public-edge` and `headscale` CNAMEs in `src/tf/domains.tf`.
-- Tailscale split-DNS is served by edge CoreDNS at `10.255.255.1` (reachable only over Tailscale). Records are managed in `src/ansible/playbooks/compose/coredns/Corefile`. Bootstrap persists the private loopback address in `/etc/network/interfaces.d/private-dns`. Traefik publishes TCP/UDP port 53 on that address only and forwards to CoreDNS inside Docker. The Tailscale playbook advertises `10.255.255.1/32`.
+- Tailscale split-DNS is served by edge CoreDNS at `10.255.255.1` (reachable from the host and over Tailscale). Records are managed in `src/ansible/playbooks/compose/coredns/Corefile`. Bootstrap persists the private loopback address in `/etc/network/interfaces.d/private-dns`. CoreDNS publishes TCP/UDP port 53 on that address directly; Traefik uses it but no longer proxies DNS. After deployment, the Tailscale playbook advertises `10.255.255.1/32` and configures the host resolver to use CoreDNS for exit-node DNS.
 
 ## Run
 Deployments require `rsync` on the control machine.

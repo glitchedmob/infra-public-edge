@@ -240,6 +240,18 @@
         ' backup/' in compose_sync.msg or
         ' ' ~ item.name ~ '/profiles.yaml' in compose_sync.msg
 
+    # Release Traefik's old port-53 bindings before CoreDNS claims them.
+    - name: Restart traefik
+      listen: Apply configuration changes
+      community.docker.docker_compose_v2:
+        state: present
+        recreate: always
+        services: [traefik]
+        dependencies: false
+      when:
+        - "'traefik' in compose_service_names"
+        - "' config/traefik/' in compose_sync.msg or ' traefik/compose.yaml' in compose_sync.msg"
+
     - name: Restart coredns
       listen: Apply configuration changes
       community.docker.docker_compose_v2:
@@ -248,17 +260,7 @@
         services: [coredns]
       when:
         - "'coredns' in compose_service_names"
-        - "' config/coredns/' in compose_sync.msg"
-
-    - name: Restart traefik
-      listen: Apply configuration changes
-      community.docker.docker_compose_v2:
-        state: present
-        recreate: always
-        services: [traefik]
-      when:
-        - "'traefik' in compose_service_names"
-        - "' config/traefik/' in compose_sync.msg"
+        - "' config/coredns/' in compose_sync.msg or ' coredns/compose.yaml' in compose_sync.msg"
 
     - name: Restart headscale
       listen: Apply configuration changes
