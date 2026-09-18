@@ -1,3 +1,10 @@
+.:1053 {
+  errors
+  cache 30
+  forward . 2606:4700:4700::1111 2606:4700:4700::1001 1.1.1.1 1.0.0.1 {
+    policy sequential
+  }
+}
 headnet.levizitting.com:1053 {
   errors
   cache 30
