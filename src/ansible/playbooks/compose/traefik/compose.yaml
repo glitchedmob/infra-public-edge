@@ -11,9 +11,9 @@ services:
       - no-new-privileges:true
     restart: unless-stopped
     mem_limit: 256m
-    # Resolve private cluster aliases through Tailscale's split DNS.
+    # Use private CoreDNS for cluster aliases and public DNS.
     dns:
-      - 100.100.100.100
+      - 10.255.255.1
     networks:
       - headscale
       - uptime-kuma
