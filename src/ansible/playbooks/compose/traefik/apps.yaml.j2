@@ -6,7 +6,6 @@ http:
         HostRegexp(`^([a-z0-9-]+\.)*levizitting\.com$`)
         && !Host({{ headscale_hostname | to_json }})
         && !Host({{ uptime_kuma_hostname | to_json }})
-        && !Host(`k8s-oidc-edge.levizitting.com`)
         && !Host(`levizitting.com`)
       priority: 100
       service: lz-ingress
@@ -82,7 +81,6 @@ tcp:
         HostSNIRegexp(`^([a-z0-9-]+\.)*levizitting\.com$`)
         && !HostSNI({{ headscale_hostname | to_json }})
         && !HostSNI({{ uptime_kuma_hostname | to_json }})
-        && !HostSNI(`k8s-oidc-edge.levizitting.com`)
         && !HostSNI(`levizitting.com`)
       service: lz-ingress
       tls:
