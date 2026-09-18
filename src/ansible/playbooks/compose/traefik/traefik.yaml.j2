@@ -1,12 +1,14 @@
 entryPoints:
   web:
     address: ":8080"
+    allowACMEByPass: true
     http:
       redirections:
         entryPoint:
           to: ":443"
           scheme: https
           permanent: true
+          priority: 1
   websecure:
     address: ":8443"
   health:

@@ -11,6 +11,9 @@ services:
       - no-new-privileges:true
     restart: unless-stopped
     mem_limit: 256m
+    # Resolve private cluster aliases through Tailscale's split DNS.
+    dns:
+      - 100.100.100.100
     networks:
       - headscale
       - uptime-kuma
