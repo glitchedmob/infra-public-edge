@@ -55,3 +55,58 @@
           --accept-dns=false
           --advertise-routes=10.255.255.1/32
           --advertise-exit-node
+
+    # Exit-node DNS uses the host resolver. Deploy CoreDNS before switching it.
+    - name: Wait for the private DNS listener before changing host DNS
+      ansible.builtin.wait_for:
+        host: 10.255.255.1
+        port: 53
+        timeout: 30
+
+    - name: Create host resolver configuration directory
+      ansible.builtin.file:
+        path: /etc/systemd/resolved.conf.d
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Route host DNS through CoreDNS
+      ansible.builtin.copy:
+        dest: /etc/systemd/resolved.conf.d/90-private-dns.conf
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          # Managed by infra-public-edge. CoreDNS forwards public queries itself.
+          [Resolve]
+          DNS=
+          DNS=10.255.255.1
+          FallbackDNS=
+          Domains=
+          Domains=~.
+          DNSStubListener=yes
+          DNSSEC=no
+          DNSOverTLS=no
+      register: host_dns_config
+
+    # Stage configuration before installation so the first start uses it.
+    - name: Install the host resolver
+      ansible.builtin.apt:
+        name: systemd-resolved
+        state: present
+
+    - name: Enable the host resolver and apply configuration changes
+      ansible.builtin.systemd_service:
+        name: systemd-resolved
+        enabled: true
+        state: "{{ 'restarted' if host_dns_config.changed else 'started' }}"
+
+    - name: Use the managed host DNS stub for exit-node queries
+      ansible.builtin.file:
+        src: /run/systemd/resolve/stub-resolv.conf
+        dest: /etc/resolv.conf
+        state: link
+        force: true
+        owner: root
+        group: root
