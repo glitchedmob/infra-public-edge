@@ -56,84 +56,53 @@
           --advertise-routes=10.255.255.1/32
           --advertise-exit-node
 
-    - name: Create host resolver configuration directory
-      ansible.builtin.file:
-        path: /etc/systemd/resolved.conf.d
-        state: directory
-        owner: root
-        group: root
-        mode: "0755"
-
-    - name: Route the private domain through CoreDNS
+    # Stage configuration before installation so dnsmasq starts on loopback only.
+    - name: Configure host DNS forwarding
       ansible.builtin.copy:
-        dest: /etc/systemd/resolved.conf.d/90-private-dns.conf
+        dest: /etc/dnsmasq.conf
         owner: root
         group: root
         mode: "0644"
         content: |
-          # Managed by infra-public-edge. Public DNS is routed through the uplink.
-          [Resolve]
-          DNS=
-          DNS=10.255.255.1
-          FallbackDNS=
-          Domains=
-          Domains=~levizitting.com
-          DNSStubListener=yes
-          DNSSEC=no
-          DNSOverTLS=no
+          # Managed by infra-public-edge.
+          listen-address=127.0.0.1
+          bind-interfaces
+          no-resolv
+
+          # Public DNS does not depend on CoreDNS.
+          server=1.1.1.1
+          server=1.0.0.1
+          server=2606:4700:4700::1111
+          server=2606:4700:4700::1001
+
+          # Private DNS, except public bootstrap names (# uses the public servers above).
+          server=/levizitting.com/10.255.255.1
+          server=/headscale.levizitting.com/public-edge.levizitting.com/{{ inventory_hostname }}.levizitting.com/#
       register: host_dns_config
 
-    # Stage configuration before installation so the first start uses it.
-    - name: Install the host resolver
+    - name: Install dnsmasq
       ansible.builtin.apt:
-        name: systemd-resolved
+        name: dnsmasq
         state: present
 
-    # ifupdown manages the uplink, so persist resolved's per-link DNS separately.
-    - name: Configure public DNS on the uplink across boots and resolver restarts
-      ansible.builtin.copy:
-        dest: /etc/systemd/system/public-edge-dns.service
-        owner: root
-        group: root
-        mode: "0644"
-        content: |
-          [Unit]
-          Description=Public DNS routing for the edge host
-          Requires=systemd-resolved.service
-          Wants=network-online.target
-          After=systemd-resolved.service network-online.target
-          PartOf=systemd-resolved.service
-
-          [Service]
-          Type=oneshot
-          ExecStart=/usr/bin/resolvectl dns {{ ansible_facts.default_ipv4.interface }} \
-              1.1.1.1 1.0.0.1 2606:4700:4700::1111 2606:4700:4700::1001
-          ExecStart=/usr/bin/resolvectl domain {{ ansible_facts.default_ipv4.interface }} \
-              ~. ~headscale.levizitting.com ~public-edge.levizitting.com ~{{ inventory_hostname }}.levizitting.com
-          RemainAfterExit=yes
-
-          [Install]
-          WantedBy=systemd-resolved.service
-      register: public_dns_unit
-
-    - name: Enable the host resolver and apply configuration changes
+    - name: Enable dnsmasq and apply configuration changes
       ansible.builtin.systemd_service:
-        name: systemd-resolved
-        daemon_reload: "{{ public_dns_unit.changed }}"
+        name: dnsmasq
         enabled: true
         state: "{{ 'restarted' if host_dns_config.changed else 'started' }}"
 
-    - name: Enable and apply public DNS routing
-      ansible.builtin.systemd_service:
-        name: public-edge-dns
-        enabled: true
-        state: "{{ 'restarted' if public_dns_unit.changed else 'started' }}"
+    - name: Remove the replaced host resolver
+      ansible.builtin.apt:
+        name: systemd-resolved
+        state: absent
 
-    - name: Use the managed host DNS stub for exit-node queries
-      ansible.builtin.file:
-        src: /run/systemd/resolve/stub-resolv.conf
+    - name: Use dnsmasq for host and exit-node queries
+      ansible.builtin.copy:
         dest: /etc/resolv.conf
-        state: link
-        force: true
+        follow: false
         owner: root
         group: root
+        mode: "0644"
+        content: |
+          # Managed by infra-public-edge.
+          nameserver 127.0.0.1
