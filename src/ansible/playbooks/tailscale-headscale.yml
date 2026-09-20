@@ -56,13 +56,6 @@
           --advertise-routes=10.255.255.1/32
           --advertise-exit-node
 
-    # Exit-node DNS uses the host resolver. Deploy CoreDNS before switching it.
-    - name: Wait for the private DNS listener before changing host DNS
-      ansible.builtin.wait_for:
-        host: 10.255.255.1
-        port: 53
-        timeout: 30
-
     - name: Create host resolver configuration directory
       ansible.builtin.file:
         path: /etc/systemd/resolved.conf.d
