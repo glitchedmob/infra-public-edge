@@ -55,3 +55,54 @@
           --accept-dns=false
           --advertise-routes=10.255.255.1/32
           --advertise-exit-node
+
+    # Stage configuration before installation so dnsmasq starts on loopback only.
+    - name: Configure host DNS forwarding
+      ansible.builtin.copy:
+        dest: /etc/dnsmasq.conf
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          # Managed by infra-public-edge.
+          listen-address=127.0.0.1
+          bind-interfaces
+          no-resolv
+
+          # Public DNS does not depend on CoreDNS.
+          server=1.1.1.1
+          server=1.0.0.1
+          server=2606:4700:4700::1111
+          server=2606:4700:4700::1001
+
+          # Private DNS, except public bootstrap names (# uses the public servers above).
+          server=/levizitting.com/10.255.255.1
+          server=/headscale.levizitting.com/public-edge.levizitting.com/{{ inventory_hostname }}.levizitting.com/#
+      register: host_dns_config
+
+    - name: Install dnsmasq
+      ansible.builtin.apt:
+        name: dnsmasq
+        state: present
+
+    - name: Enable dnsmasq and apply configuration changes
+      ansible.builtin.systemd_service:
+        name: dnsmasq
+        enabled: true
+        state: "{{ 'restarted' if host_dns_config.changed else 'started' }}"
+
+    - name: Remove the replaced host resolver
+      ansible.builtin.apt:
+        name: systemd-resolved
+        state: absent
+
+    - name: Use dnsmasq for host and exit-node queries
+      ansible.builtin.copy:
+        dest: /etc/resolv.conf
+        follow: false
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          # Managed by infra-public-edge.
+          nameserver 127.0.0.1

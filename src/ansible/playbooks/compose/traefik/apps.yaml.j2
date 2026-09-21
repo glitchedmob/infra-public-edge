@@ -94,10 +94,6 @@ tcp:
       service: sgfdevs-ingress
       tls:
         passthrough: true
-    coredns:
-      entryPoints: [dns-tcp]
-      rule: HostSNI(`*`)
-      service: coredns
   services:
     lz-ingress:
       loadBalancer:
@@ -107,18 +103,3 @@ tcp:
       loadBalancer:
         servers:
           - address: sgfdevs-k3s.levizitting.com:443
-    coredns:
-      loadBalancer:
-        servers:
-          - address: coredns:1053
-
-udp:
-  routers:
-    coredns:
-      entryPoints: [dns-udp]
-      service: coredns
-  services:
-    coredns:
-      loadBalancer:
-        servers:
-          - address: coredns:1053
