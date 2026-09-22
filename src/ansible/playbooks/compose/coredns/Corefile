@@ -44,6 +44,12 @@ levizitting.com:1053 {
   template IN ANY secrets.levizitting.com {
     answer "{{ .Name }} 3600 IN CNAME lz-k3s.levizitting.com."
   }
+  template IN ANY speedtest.levizitting.com {
+    answer "{{ .Name }} 3600 IN CNAME lz-k3s.levizitting.com."
+  }
+  template IN ANY smokeping.levizitting.com {
+    answer "{{ .Name }} 3600 IN CNAME lz-k3s.levizitting.com."
+  }
   template IN ANY grafana.levizitting.com {
     answer "{{ .Name }} 3600 IN CNAME lz-k3s.levizitting.com."
   }
