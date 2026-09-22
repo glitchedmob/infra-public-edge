@@ -7,8 +7,6 @@ http:
         && !Host({{ headscale_hostname | to_json }})
         && !Host({{ uptime_kuma_hostname | to_json }})
         && !Host(`levizitting.com`)
-        && !Host(`speedtest.levizitting.com`)
-        && !Host(`smokeping.levizitting.com`)
       priority: 100
       service: lz-ingress
     sgfdevs-http-forward:
@@ -84,8 +82,6 @@ tcp:
         && !HostSNI({{ headscale_hostname | to_json }})
         && !HostSNI({{ uptime_kuma_hostname | to_json }})
         && !HostSNI(`levizitting.com`)
-        && !HostSNI(`speedtest.levizitting.com`)
-        && !HostSNI(`smokeping.levizitting.com`)
       service: lz-ingress
       tls:
         passthrough: true
