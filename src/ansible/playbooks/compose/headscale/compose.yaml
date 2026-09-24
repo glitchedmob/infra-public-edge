@@ -30,7 +30,7 @@ services:
           create_host_path: false
 
   headscale:
-    image: headscale/headscale:v0.29.3
+    image: headscale/headscale:v0.29.4
     user: "10001:10001"
     command: [serve]
     read_only: true
