@@ -8,7 +8,7 @@
     compose_source: "{{ playbook_dir }}/compose"
     headscale_hostname: headscale.levizitting.com
     uptime_kuma_hostname: uptime.levizitting.com
-    lz_tailnet_ingress_enabled: false
+    lz_tailnet_ingress_enabled: true
     acme_email: me@levizitting.com
     # Shared application secret; preserve the existing SSM path across node replacements.
     ssm_headplane_cookie_secret_path: /homelab/x86-vps-node-01/headplane-cookie-secret
