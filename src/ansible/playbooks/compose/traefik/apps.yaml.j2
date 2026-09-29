@@ -55,10 +55,9 @@ http:
         passHostHeader: true
         servers:
 {% if lz_tailnet_ingress_enabled | bool %}
-          # IPv4 pins keep the sender in the receiver's trusted IPv4 scope (100.64.0.10/32).
-          - url: http://100.64.0.35:8000
-          - url: http://100.64.0.34:8000
-          - url: http://100.64.0.37:8000
+          - url: http://traefik-lz-k3s-01.headnet.levizitting.com:8000
+          - url: http://traefik-lz-k3s-02.headnet.levizitting.com:8000
+          - url: http://traefik-lz-k3s-03.headnet.levizitting.com:8000
 {% else %}
           - url: http://lz-k3s.levizitting.com:80
 {% endif %}
@@ -123,11 +122,10 @@ tcp:
 {% if lz_tailnet_ingress_enabled | bool %}
         proxyProtocol:
           version: 2
-        # IPv4 pins keep the sender in the receiver's trusted IPv4 scope (100.64.0.10/32).
         servers:
-          - address: 100.64.0.35:8443
-          - address: 100.64.0.34:8443
-          - address: 100.64.0.37:8443
+          - address: traefik-lz-k3s-01.headnet.levizitting.com:8443
+          - address: traefik-lz-k3s-02.headnet.levizitting.com:8443
+          - address: traefik-lz-k3s-03.headnet.levizitting.com:8443
 {% else %}
         servers:
           - address: lz-k3s.levizitting.com:443
