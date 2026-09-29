@@ -54,13 +54,9 @@ http:
       loadBalancer:
         passHostHeader: true
         servers:
-{% if lz_tailnet_ingress_enabled | bool %}
           - url: http://traefik-lz-k3s-01.headnet.levizitting.com:8000
           - url: http://traefik-lz-k3s-02.headnet.levizitting.com:8000
           - url: http://traefik-lz-k3s-03.headnet.levizitting.com:8000
-{% else %}
-          - url: http://lz-k3s.levizitting.com:80
-{% endif %}
     sgfdevs-ingress:
       loadBalancer:
         passHostHeader: true
@@ -81,13 +77,6 @@ http:
 
 tcp:
   routers:
-    visitor-ip-probe:
-      entryPoints: [websecure]
-      rule: HostSNI(`visitor-ip-probe.levizitting.com`)
-      priority: 1000
-      service: visitor-ip-probe
-      tls:
-        passthrough: true
     lz-https-passthrough:
       entryPoints: [websecure]
       rule: >-
@@ -108,28 +97,14 @@ tcp:
       tls:
         passthrough: true
   services:
-    visitor-ip-probe:
-      loadBalancer:
-        proxyProtocol:
-          version: 2
-        # IPv4 pins keep the sender in the receiver's trusted IPv4 scope (100.64.0.10/32).
-        servers:
-          - address: 100.64.0.35:8443
-          - address: 100.64.0.34:8443
-          - address: 100.64.0.37:8443
     lz-ingress:
       loadBalancer:
-{% if lz_tailnet_ingress_enabled | bool %}
         proxyProtocol:
           version: 2
         servers:
           - address: traefik-lz-k3s-01.headnet.levizitting.com:8443
           - address: traefik-lz-k3s-02.headnet.levizitting.com:8443
           - address: traefik-lz-k3s-03.headnet.levizitting.com:8443
-{% else %}
-        servers:
-          - address: lz-k3s.levizitting.com:443
-{% endif %}
     sgfdevs-ingress:
       loadBalancer:
         servers:
