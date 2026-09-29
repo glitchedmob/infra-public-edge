@@ -75,6 +75,13 @@ http:
 
 tcp:
   routers:
+    visitor-ip-probe:
+      entryPoints: [websecure]
+      rule: HostSNI(`visitor-ip-probe.levizitting.com`)
+      priority: 1000
+      service: visitor-ip-probe
+      tls:
+        passthrough: true
     lz-https-passthrough:
       entryPoints: [websecure]
       rule: >-
@@ -95,6 +102,15 @@ tcp:
       tls:
         passthrough: true
   services:
+    visitor-ip-probe:
+      loadBalancer:
+        proxyProtocol:
+          version: 2
+        # IPv4 pins keep the sender in the receiver's trusted IPv4 scope (100.64.0.10/32).
+        servers:
+          - address: 100.64.0.35:8443
+          - address: 100.64.0.34:8443
+          - address: 100.64.0.37:8443
     lz-ingress:
       loadBalancer:
         servers:
