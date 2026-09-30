@@ -61,7 +61,9 @@ http:
       loadBalancer:
         passHostHeader: true
         servers:
-          - url: http://sgfdevs-k3s.levizitting.com:80
+          - url: http://traefik-sgfdevs-k3s-01.headnet.levizitting.com:8000
+          - url: http://traefik-sgfdevs-k3s-02.headnet.levizitting.com:8000
+          - url: http://traefik-sgfdevs-k3s-03.headnet.levizitting.com:8000
     headscale:
       loadBalancer:
         servers:
@@ -107,5 +109,9 @@ tcp:
           - address: traefik-lz-k3s-03.headnet.levizitting.com:8443
     sgfdevs-ingress:
       loadBalancer:
+        proxyProtocol:
+          version: 2
         servers:
-          - address: sgfdevs-k3s.levizitting.com:443
+          - address: traefik-sgfdevs-k3s-01.headnet.levizitting.com:8443
+          - address: traefik-sgfdevs-k3s-02.headnet.levizitting.com:8443
+          - address: traefik-sgfdevs-k3s-03.headnet.levizitting.com:8443
