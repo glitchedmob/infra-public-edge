@@ -15,6 +15,14 @@ Provisions and operates the LZ public edge platform.
 - Traefik on the edge node forwards zone traffic to internal workload clusters.
 - HTTPS for forwarded zones uses TCP passthrough at the edge; TLS terminates on destination clusters.
 - Destination app ingresses are defined in [`glitchedmob/infra-k8s-apps`](https://github.com/glitchedmob/infra-k8s-apps) and [`sgfdevs/infra-k8s-apps`](https://github.com/sgfdevs/infra-k8s-apps).
+- `social.sgf.dev` is an exception. Exact-host routes with priority `1000` forward HTTP to `nothotdog.headnet.levizitting.com:80` and pass HTTPS through to port `443`. Caddy on that Raspberry Pi handles certificates, TLS, and Mastodon web/streaming routing. The backend does not use PROXY protocol.
+- HTTP forwarding preserves the host and ACME challenge path, allowing Caddy's HTTP-01 validation through the edge. The priority exceeds both the cluster wildcard routes and the edge's default HTTP-to-HTTPS redirect.
+
+### Mastodon backend checks
+
+The Pi must be registered in Headscale as `nothotdog` with `tag:mastodon`. The Headscale policy grants the edge access to its ports `80` and `443`; no cluster ingress is involved. Traefik uses private CoreDNS to resolve the Pi's MagicDNS hostname.
+
+Before changing public DNS, verify resolution and connectivity from the edge host and the Traefik container's network. Check HTTP with `Host: social.sgf.dev` and HTTPS with SNI `social.sgf.dev`. Check Mastodon's streaming WebSocket connection as well as the web UI. Do not substitute `nothotdog.levizitting.com`, which identifies the old WireGuard address.
 
 ## DNS model
 - Two DNS paths exist for `*.levizitting.com`: **public** (Cloudflare, for internet clients) and **Tailscale split-DNS** (edge CoreDNS, for tailnet clients).

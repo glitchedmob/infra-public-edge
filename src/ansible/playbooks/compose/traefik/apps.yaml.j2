@@ -17,6 +17,11 @@ http:
         || HostRegexp(`^([a-z0-9-]+\.)*hack4goodsgf\.com$`)
       priority: 100
       service: sgfdevs-ingress
+    mastodon-http-forward:
+      entryPoints: [web]
+      rule: Host(`social.sgf.dev`)
+      priority: 1000
+      service: mastodon
     headscale:
       rule: {{ ('Host(' ~ (headscale_hostname | to_json) ~ ')') | to_json }}
       priority: 10
@@ -64,6 +69,11 @@ http:
           - url: http://traefik-sgfdevs-k3s-01.headnet.levizitting.com:8000
           - url: http://traefik-sgfdevs-k3s-02.headnet.levizitting.com:8000
           - url: http://traefik-sgfdevs-k3s-03.headnet.levizitting.com:8000
+    mastodon:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: http://nothotdog.headnet.levizitting.com:80
     headscale:
       loadBalancer:
         servers:
@@ -89,6 +99,13 @@ tcp:
       service: lz-ingress
       tls:
         passthrough: true
+    mastodon-https-passthrough:
+      entryPoints: [websecure]
+      rule: HostSNI(`social.sgf.dev`)
+      priority: 1000
+      service: mastodon
+      tls:
+        passthrough: true
     sgfdevs-https-passthrough:
       entryPoints: [websecure]
       rule: >-
@@ -99,6 +116,11 @@ tcp:
       tls:
         passthrough: true
   services:
+    mastodon:
+      loadBalancer:
+        # Stock Caddy expects TLS directly, without a PROXY protocol preamble.
+        servers:
+          - address: nothotdog.headnet.levizitting.com:443
     lz-ingress:
       loadBalancer:
         proxyProtocol:
