@@ -15,6 +15,9 @@ http:
         HostRegexp(`^([a-z0-9-]+\.)*sgf\.dev$`)
         || HostRegexp(`^([a-z0-9-]+\.)*methodconf\.com$`)
         || HostRegexp(`^([a-z0-9-]+\.)*hack4goodsgf\.com$`)
+        || HostRegexp(`^([a-z0-9-]+\.)*opensgf\.org$`)
+        || HostRegexp(`^([a-z0-9-]+\.)*opensgf\.com$`)
+        || Host(`healthiermo.ryandelap.io`)
       priority: 100
       service: sgfdevs-ingress
     mastodon-http-forward:
@@ -112,6 +115,9 @@ tcp:
         HostSNIRegexp(`^([a-z0-9-]+\.)*sgf\.dev$`)
         || HostSNIRegexp(`^([a-z0-9-]+\.)*methodconf\.com$`)
         || HostSNIRegexp(`^([a-z0-9-]+\.)*hack4goodsgf\.com$`)
+        || HostSNIRegexp(`^([a-z0-9-]+\.)*opensgf\.org$`)
+        || HostSNIRegexp(`^([a-z0-9-]+\.)*opensgf\.com$`)
+        || HostSNI(`healthiermo.ryandelap.io`)
       service: sgfdevs-ingress
       tls:
         passthrough: true
