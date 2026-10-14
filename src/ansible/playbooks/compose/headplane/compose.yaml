@@ -30,7 +30,7 @@ services:
           create_host_path: false
 
   headplane:
-    image: ghcr.io/tale/headplane:0.7.1
+    image: ghcr.io/tale/headplane:0.8.0
     user: "10002:10002"
     read_only: true
     cap_drop:
