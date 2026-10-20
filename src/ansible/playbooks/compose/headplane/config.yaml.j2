@@ -8,6 +8,11 @@ server:
 
 headscale:
   url: http://headscale:8080
+  api_key_path: /run/secrets/headplane/api_key
   public_url: {{ ('https://' ~ headscale_hostname) | to_json }}
   config_path: /etc/headscale/config.yaml
   config_strict: false
+
+integration:
+  agent:
+    enabled: true
