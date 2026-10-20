@@ -11,6 +11,7 @@ on:
           - base-os-updates.yml
           - bootstrap.yml
           - deploy.yml
+          - provision-headplane-api-key.yml
           - tailscale-headscale.yml
       connectivity-mode:
         description: How to reach the edge node

@@ -1,0 +1,30 @@
+---
+- name: Issue a Headscale API key for Headplane and replace its SSM value
+  hosts: x86-vps-node-02
+  become: true
+  gather_facts: false
+  tasks:
+    # Each manual run issues a replacement. Previous keys remain valid.
+    - name: Create a 100-year Headscale API key
+      community.docker.docker_compose_v2_exec:
+        project_src: /opt/infra-public-edge
+        service: headscale
+        tty: false
+        command: /ko-app/headscale --config /etc/headscale/config.yaml apikeys create --expiration 100y
+      register: headplane_api_key
+      failed_when: headplane_api_key.rc != 0
+      no_log: true
+
+    - name: Store the API key in SSM using controller credentials
+      community.aws.ssm_parameter:
+        name: /homelab/public-edge/headplane/headscale-api-key
+        string_type: SecureString
+        value: "{{ headplane_api_key.stdout | trim }}"
+        overwrite_value: always
+      when: not ansible_check_mode
+      delegate_to: localhost
+      become: false
+      vars:
+        ansible_python_interpreter: "{{ ansible_playbook_python }}"
+      no_log: true
+      diff: false
