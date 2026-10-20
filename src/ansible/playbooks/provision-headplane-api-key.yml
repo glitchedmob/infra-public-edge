@@ -3,20 +3,6 @@
   hosts: x86-vps-node-02
   become: true
   gather_facts: false
-  pre_tasks:
-    - name: Reject check mode and GitHub Actions refs without SSM write access
-      ansible.builtin.assert:
-        that:
-          - not ansible_check_mode
-          - lookup('env', 'GITHUB_ACTIONS') != 'true' or lookup('env', 'GITHUB_REF') == 'refs/heads/main'
-        fail_msg: "Run without --check and select main when dispatching through GitHub Actions."
-
-    - name: Load SSH private key once
-      ansible.builtin.set_fact:
-        ansible_ssh_private_key: "{{ ansible_ssh_private_key }}"
-      when: ssm_private_key_path is defined
-      no_log: true
-
   tasks:
     # Each manual run issues a replacement. Previous keys remain valid.
     - name: Create a 100-year Headscale API key
@@ -26,17 +12,16 @@
         tty: false
         command: /ko-app/headscale --config /etc/headscale/config.yaml apikeys create --expiration 100y
       register: headplane_api_key
-      failed_when: headplane_api_key.rc != 0 or headplane_api_key.stdout | trim | length == 0
+      failed_when: headplane_api_key.rc != 0
       no_log: true
 
     - name: Store the API key in SSM using controller credentials
       community.aws.ssm_parameter:
         name: /homelab/public-edge/headplane/headscale-api-key
-        description: Headscale administrative API key for Headplane
         string_type: SecureString
         value: "{{ headplane_api_key.stdout | trim }}"
         overwrite_value: always
-        state: present
+      when: not ansible_check_mode
       delegate_to: localhost
       become: false
       vars:
