@@ -11,6 +11,7 @@
     acme_email: me@levizitting.com
     # Shared application secret; preserve the existing SSM path across node replacements.
     ssm_headplane_cookie_secret_path: /homelab/x86-vps-node-01/headplane-cookie-secret
+    ssm_headplane_api_key_path: /homelab/public-edge/headplane/headscale-api-key
     compose_apps:
       - { name: traefik, uid: 10003 }
       - { name: headscale, uid: 10001, backup: true }
@@ -77,6 +78,18 @@
         group: "10002"
         mode: "0440"
       register: headplane_cookie_secret
+      no_log: true
+      diff: false
+      notify: Restart headplane
+
+    - name: Install Headplane API key
+      ansible.builtin.copy:
+        content: "{{ lookup('amazon.aws.ssm_parameter', ssm_headplane_api_key_path) }}"
+        dest: "{{ deployment_directory }}/secrets/headplane/api_key"
+        owner: root
+        group: "10002"
+        mode: "0440"
+      register: headplane_api_key
       no_log: true
       diff: false
       notify: Restart headplane
@@ -285,6 +298,7 @@
         - "'headplane' in compose_service_names"
         - >-
           headplane_cookie_secret.changed or
+          headplane_api_key.changed or
           ' config/headplane/' in compose_sync.msg or
           ' config/headscale/' in compose_sync.msg or
           ' config/headscale-dns/' in compose_sync.msg
