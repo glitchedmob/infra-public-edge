@@ -1,26 +1,15 @@
 ---
-- name: Provision the Headscale API key for Headplane in SSM
+- name: Issue a Headscale API key for Headplane and replace its SSM value
   hosts: x86-vps-node-02
   become: true
   gather_facts: false
-  vars:
-    deployment_directory: /opt/infra-public-edge
-    ssm_headplane_api_key_path: /homelab/public-edge/headplane/headscale-api-key
-    headplane_api_key_expiration: 90d
-    headplane_api_key_rotate: false
   pre_tasks:
-    - name: Require an explicit provisioning run and a finite key lifetime
+    - name: Reject check mode and GitHub Actions refs without SSM write access
       ansible.builtin.assert:
         that:
           - not ansible_check_mode
-          - headplane_api_key_expiration is match('^[1-9][0-9]*[mhd]$')
-        fail_msg: "Provisioning does not support --check. Set headplane_api_key_expiration to a positive duration such as 90d."
-
-    - name: Require main for GitHub Actions SSM writes
-      ansible.builtin.assert:
-        that:
           - lookup('env', 'GITHUB_ACTIONS') != 'true' or lookup('env', 'GITHUB_REF') == 'refs/heads/main'
-        fail_msg: "Run this workflow from main; the GitHub Actions role cannot write SSM parameters from other refs."
+        fail_msg: "Run without --check and select main when dispatching through GitHub Actions."
 
     - name: Load SSH private key once
       ansible.builtin.set_fact:
@@ -28,83 +17,29 @@
       when: ssm_private_key_path is defined
       no_log: true
 
-    - name: Check whether the SSM parameter already exists
-      ansible.builtin.set_fact:
-        headplane_api_key_exists: >-
-          {{ lookup('amazon.aws.ssm_parameter', ssm_headplane_api_key_path,
-                    decrypt=false, on_missing='skip') | default('', true) | length > 0 }}
-      no_log: true
-
-    - name: Require explicit rotation when a key is already stored
-      ansible.builtin.assert:
-        that:
-          - not headplane_api_key_exists or headplane_api_key_rotate | bool
-        fail_msg: >-
-          {{ ssm_headplane_api_key_path }} already exists. To replace it, supply
-          -e headplane_api_key_rotate=true. Existing Headscale keys are not revoked.
-
   tasks:
-    - name: Create a Headscale API key
+    # Each manual run issues a replacement. Previous keys remain valid.
+    - name: Create a 100-year Headscale API key
       community.docker.docker_compose_v2_exec:
-        project_src: "{{ deployment_directory }}"
+        project_src: /opt/infra-public-edge
         service: headscale
         tty: false
-        argv:
-          - /ko-app/headscale
-          - --config
-          - /etc/headscale/config.yaml
-          - apikeys
-          - create
-          - --expiration
-          - "{{ headplane_api_key_expiration }}"
-      register: headplane_api_key_created
-      failed_when: headplane_api_key_created.rc != 0
-      changed_when: true
+        command: /ko-app/headscale --config /etc/headscale/config.yaml apikeys create --expiration 100y
+      register: headplane_api_key
+      failed_when: headplane_api_key.rc != 0 or headplane_api_key.stdout | trim | length == 0
+      no_log: true
+
+    - name: Store the API key in SSM using controller credentials
+      community.aws.ssm_parameter:
+        name: /homelab/public-edge/headplane/headscale-api-key
+        description: Headscale administrative API key for Headplane
+        string_type: SecureString
+        value: "{{ headplane_api_key.stdout | trim }}"
+        overwrite_value: always
+        state: present
+      delegate_to: localhost
+      become: false
+      vars:
+        ansible_python_interpreter: "{{ ansible_playbook_python }}"
       no_log: true
       diff: false
-
-    - name: Require a nonempty API key
-      ansible.builtin.assert:
-        that:
-          - headplane_api_key_created.stdout | trim | length > 0
-      no_log: true
-
-    - name: Persist the newly issued key
-      block:
-        - name: Store the API key in SSM using controller credentials
-          community.aws.ssm_parameter:
-            name: "{{ ssm_headplane_api_key_path }}"
-            description: Headscale administrative API key for Headplane
-            string_type: SecureString
-            key_id: alias/aws/ssm
-            value: "{{ headplane_api_key_created.stdout | trim }}"
-            overwrite_value: "{{ 'always' if headplane_api_key_rotate | bool else 'never' }}"
-            state: present
-          delegate_to: localhost
-          become: false
-          vars:
-            ansible_python_interpreter: "{{ ansible_playbook_python }}"
-          register: headplane_api_key_stored
-          no_log: true
-          diff: false
-      rescue:
-        - name: Explain the failed SSM write without exposing the key
-          ansible.builtin.fail:
-            msg: >-
-              SSM storage failed after issuing a Headscale API key. Check controller AWS permissions
-              and the parameter before retrying. The new key remains valid; review Headscale API keys
-              and revoke any unused key. No existing keys were revoked.
-
-    - name: Require the newly issued key to have been stored
-      ansible.builtin.assert:
-        that: headplane_api_key_stored.changed
-        fail_msg: >-
-          The parameter was not updated, possibly because another provisioning run created it.
-          A new Headscale key was issued but is unused; review Headscale API keys before retrying.
-
-    - name: Report the provisioning result without exposing the key
-      ansible.builtin.debug:
-        msg: >-
-          Stored the Headscale API key at {{ ssm_headplane_api_key_path }} with a lifetime of
-          {{ headplane_api_key_expiration }}. No applications were deployed or restarted.
-          Previous keys remain valid; revoke them only after deploying and verifying the replacement.
