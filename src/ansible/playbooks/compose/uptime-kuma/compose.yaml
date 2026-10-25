@@ -30,7 +30,7 @@ services:
           create_host_path: false
 
   uptime-kuma:
-    image: louislam/uptime-kuma:2.4.0-slim
+    image: louislam/uptime-kuma:2.5.7-slim
     user: "1000:1000"
     read_only: true
     cap_drop:
