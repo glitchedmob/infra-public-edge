@@ -9,4 +9,4 @@ dependencies = [
 ]
 
 [tool.uv]
-required-version = ">=0.10.0,<0.13.0"
+required-version = ">=0.13.6,<0.14.0"
