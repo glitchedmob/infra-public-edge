@@ -4,19 +4,19 @@ terraform {
   required_providers {
     vultr = {
       source  = "vultr/vultr"
-      version = "~> 2.32"
+      version = "~> 2.33"
     }
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 6.58"
+      version = "~> 6.73"
     }
     b2 = {
       source  = "Backblaze/b2"
-      version = "~> 0.13"
+      version = "~> 0.14"
     }
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "~> 5.23"
+      version = "~> 5.29"
     }
     ansible = {
       source  = "ansible/ansible"
